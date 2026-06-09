@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#28a745">
+<title>My Solar Battery</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --bg:#f4f5f7; --card:#ffffff; --text:#1c1c1e; --muted:#8a8a8e;
+    --line:#e5e5ea; --green:#28a745; --amber:#e8910b; --red:#e24b4a; --blue:#3b82f6;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#000; --card:#1c1c1e; --text:#f2f2f7; --muted:#8a8a8e;
+           --line:#2c2c2e; --green:#30d158; --amber:#ffb02e; --red:#ff453a; --blue:#5aa7ff; }
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body{ margin:0; background:var(--bg); color:var(--text);
+        font-family:-apple-system,"Segoe UI",Roboto,sans-serif;
+        display:flex; justify-content:center; min-height:100vh; }
+  .wrap{ width:100%; max-width:420px; padding:24px 16px 32px; }
+  .card{ background:var(--card); border:0.5px solid var(--line); border-radius:20px; padding:18px; }
+  .title{ font-size:16px; font-weight:500; text-align:center; margin:0; }
+  .sub{ font-size:12px; color:var(--muted); text-align:center; margin:4px 0 0; }
+  .big{ font-size:60px; font-weight:500; line-height:1; text-align:center; }
+  .big small{ font-size:24px; }
+  .pill{ display:flex; align-items:center; justify-content:center; gap:6px; width:fit-content;
+         margin:12px auto 0; font-size:13px; padding:5px 14px; border-radius:999px; }
+  .bar{ height:12px; background:var(--line); border-radius:999px; overflow:hidden; margin:18px 0 4px; }
+  .bar > div{ height:100%; border-radius:999px; transition:width .4s; }
+  .sec{ font-size:12px; color:var(--muted); font-weight:500; margin:22px 2px 12px; letter-spacing:.04em; }
+  .donutRow{ display:flex; align-items:center; gap:16px; margin-bottom:14px; }
+  .donut{ width:96px; height:96px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+  .donut .hole{ width:62px; height:62px; border-radius:50%; background:var(--card); display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .leg{ font-size:12px; line-height:1.9; }
+  .dot{ font-size:11px; }
+  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .stat{ background:var(--bg); border-radius:13px; padding:10px 12px; }
+  .stat .lbl{ font-size:11px; color:var(--muted); margin-bottom:3px; }
+  .stat .val{ font-size:18px; font-weight:600; }
+  .stat .val span{ font-size:10px; color:var(--muted); }
+  .foot{ font-size:11px; color:var(--muted); text-align:center; margin-top:16px; }
+  .err{ color:var(--red); font-size:13px; text-align:center; word-break:break-all; }
+</style>
+</head>
+<body>
+  <div class="wrap" onclick="load()">
+    <div class="card">
+      <p class="title">My Solar Battery</p>
+      <p class="sub">Online Inverter 1</p>
+      <div id="content"><div class="big" style="color:var(--muted)">…</div></div>
+      <p class="foot" id="foot">tap anywhere to refresh</p>
+    </div>
+  </div>
+
+<script>
+  const API = "https://script.google.com/macros/s/AKfycbxVeRcWab_M1xdzRf4-ga5eF6FRB05glHpQo7icCMmgZQaHhKsE4HLhY918A_dIaJKf/exec";   // URL /exec ของคุณ
+
+  function n(v){ return (v===null||v===undefined)?null:Number(v); }
+  function r1(v){ return v===null?'—':(Math.round(v*10)/10); }
+  function colorFor(soc){ if(soc===null) return 'var(--muted)'; if(soc>=50) return 'var(--green)'; if(soc>=20) return 'var(--amber)'; return 'var(--red)'; }
+
+  function render(d){
+    var c=document.getElementById('content');
+    if(!d||!d.ok){ c.innerHTML='<p class="err">เชื่อมต่อไม่ได้<br>'+((d&&d.err)||'')+'</p>'; document.getElementById('foot').textContent='tap to retry'; return; }
+
+    var soc=d.soc, batt=d.batt, col=colorFor(soc);
+    var state = batt===null?'—':(batt<0?'Charging':(batt>0?'Discharging':'Idle'));  // batt<0=ชาร์จเข้า
+
+    // ----- รายวัน -----
+    var cons=d.cons, purchase=d.purchase, discharge=d.discharge||0;
+    var solarSelf = (cons!==null&&purchase!==null) ? Math.max(0, cons - purchase - discharge) : null;
+    var selfSuff  = (cons>0&&purchase!==null) ? Math.round((cons-purchase)/cons*100) : null;
+
+    var donutHtml = '';
+    if (cons>0 && solarSelf!==null){
+      var sp = solarSelf/cons*100, gp = purchase/cons*100;
+      var grad = 'conic-gradient(var(--green) 0 '+sp+'%, var(--blue) '+sp+'% '+(sp+gp)+'%, var(--line) '+(sp+gp)+'% 100%)';
+      donutHtml =
+        '<div class="sec">TODAY</div>'
+       +'<div class="donutRow">'
+       + '<div class="donut" style="background:'+grad+'"><div class="hole">'
+       +   '<span style="font-size:9px;color:var(--muted)">ใช้</span>'
+       +   '<span style="font-size:16px;font-weight:600">'+r1(cons)+'</span>'
+       +   '<span style="font-size:8px;color:var(--muted)">kWh</span>'
+       + '</div></div>'
+       + '<div class="leg">'
+       +   '<div><span class="dot" style="color:var(--green)">●</span> แดด (ใช้ตรง) <b>'+r1(solarSelf)+'</b></div>'
+       +   '<div><span class="dot" style="color:var(--blue)">●</span> ซื้อจาก Grid <b>'+r1(purchase)+'</b></div>'
+       +   '<div><span class="dot" style="color:var(--muted)">●</span> แบตเตอรี่ <b>'+r1(discharge)+'</b></div>'
+       + '</div>'
+       +'</div>';
+    }
+
+    var tiles =
+      '<div class="grid">'
+     + '<div class="stat"><div class="lbl">ผลิตวันนี้</div><div class="val">'+r1(d.prod)+'<span> kWh</span></div></div>'
+     + '<div class="stat"><div class="lbl">ชาร์จแบต</div><div class="val">'+r1(d.charge)+'<span> kWh</span></div></div>'
+     + '<div class="stat"><div class="lbl">พึ่งตัวเอง</div><div class="val" style="color:var(--green)">'+(selfSuff===null?'—':selfSuff)+'<span>%</span></div></div>'
+     + '<div class="stat"><div class="lbl">ขายคืน</div><div class="val">'+r1(d.feedin)+'<span> kWh</span></div></div>'
+     +'</div>';
+
+    c.innerHTML =
+       '<div class="big" style="color:'+col+'">'+(soc!==null?soc:'—')+'<small>%</small></div>'
+      +'<div class="pill" style="background:'+col+'22; color:'+col+'">'+state+(batt!==null?' · '+Math.abs(Math.round(batt))+' W':'')+'</div>'
+      +'<div class="bar"><div style="width:'+(soc!==null?soc:0)+'%; background:'+col+'"></div></div>'
+      +'<div class="grid" style="margin-top:14px">'
+      + '<div class="stat"><div class="lbl">Solar (now)</div><div class="val">'+(d.genW!==null?Math.round(d.genW):'—')+'<span> W</span></div></div>'
+      + '<div class="stat"><div class="lbl">Home (now)</div><div class="val">'+(d.consW!==null?Math.round(d.consW):'—')+'<span> W</span></div></div>'
+      +'</div>'
+      + donutHtml
+      + tiles;
+
+    document.getElementById('foot').textContent='updated '+new Date().toLocaleTimeString()+' · tap to refresh';
+  }
+  function showErr(e){ render({ok:false,err:String(e)}); }
+
+  function load(){
+    document.getElementById('foot').textContent='loading…';
+    fetch(API+'?f=json')
+      .then(function(r){ return r.json(); })
+      .then(render)
+      .catch(showErr);
+  }
+
+  load();
+  setInterval(load, 60000);
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
+</script>
+</body>
+</html>
