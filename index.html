@@ -211,10 +211,10 @@ header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:righ
    เขียว = ชาร์จเข้าแบต · ส้ม = ดึงไฟจากแบต · ไม่ลงสี = ซื้อไฟ/นิ่ง (ตามที่สั่ง)
    สีเขียว/ส้ม ยืมโทนจากชุดเดิมของแอป ไม่ได้เพิ่มสีใหม่เข้าจาน */
 .strip svg{display:block;width:100%;height:auto}
-.strip .hr{font-size:10.5px;fill:var(--muted)}
-.stripLeg{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:11.5px;color:var(--ink-2)}
+.strip .hr{font-size:9.5px;fill:var(--muted)}
+.stripLeg{display:flex;gap:12px;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--ink-2)}
 .stripLeg span{display:inline-flex;align-items:center;gap:5px}
-.stripLeg i{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+.stripLeg i{width:10px;height:10px;border-radius:2.5px;flex-shrink:0}
 
 /* ---------- charts ---------- */
 .chart{position:relative;width:100%;touch-action:pan-y}
@@ -828,6 +828,13 @@ function battChip(batt, soc){
       🔑 สูตรกลับด้านของที่ getData_ ใช้คำนวณ grid ⇒ ใช้นิยามเดียวกันทั้งแอป
    🔵 เกณฑ์ 20 W = ชุดเดียวกับผังทิศทางไฟและไอคอนแบต (sensor แกว่งระดับนั้นเป็นปกติ)
    🔵 "ไม่มีข้อมูล" กับ "ซื้อไฟ" ต้องแยกกันให้ออก: ไม่มี sample = พื้นการ์ด · มี sample แต่ซื้อไฟ = เทา */
+/* 🔴 เกณฑ์ "ชาร์จ" ต้อง > 100 W (Napon ทัก: ตี 4 ขึ้นเขียวทั้งที่ไม่น่าชาร์จได้)
+   🟢 ตรวจแล้วสูตรไม่ผิด — probe 2026-06-01 กลางคืน: batteryPower จริง = -52 W
+      สูตร batt = load-pv-grid = 1417-2-1468 = -53 ⇒ ตรงกับของจริง
+      ⇒ แบตมัน "จิบ" ไฟจากกริดจริง ~50 W แต่ไม่ควรนับว่าชาร์จ
+   🔵 ฝั่งจ่ายออกยังใช้ 20 W ตามเดิม — Napon ระบุมาเฉพาะฝั่งชาร์จ */
+var STRIP_CHG_W = 100;              // ชาร์จ: ต้องเกิน 100 W ถึงนับ
+var STRIP_DIS_W = 20;               // จ่ายออก: เกณฑ์เดิม
 var STRIP_CHG = "var(--batt)";      // เขียว
 var STRIP_DIS = "var(--serious)";   // ส้ม
 var STRIP_BUY = "var(--line)";      // เทา = ซื้อไฟ/นิ่ง (ไม่ลงสีตามที่สั่ง)
@@ -844,7 +851,7 @@ function dayStrip(d){
     var pv=it.pv[i], ld=it.load[i], gr=hasG?it.grid[i]:null;
     if(pv===null||ld===null||gr===null) continue;
     var batt = ld - pv - gr;
-    var key = (batt < -20) ? "chg" : (batt > 20 ? "dis" : "buy");
+    var key = (batt < -STRIP_CHG_W) ? "chg" : (batt > STRIP_DIS_W ? "dis" : "buy");
     // 🔴 ช่วงหนึ่งคร่อม 2 ชั่วโมงได้ — ต้องหั่นตามขอบชั่วโมง ไม่งั้นช่องที่วาดจะเพี้ยน
     var a = t0;
     while(a < t1){
@@ -855,8 +862,9 @@ function dayStrip(d){
       a = b;
     }
   }
-  var W=360, gap=2.6, cw=(W-gap*23)/24, cy=4, ch=26;
-  var o = ['<svg viewBox="0 0 '+W+' 48" role="img" aria-label="24 ช่อง ชั่วโมงละ 1 ช่อง">'];
+  // 2026-09-22 บีบให้พอดีจอมือถือ (Napon: แสดงไม่เต็มหน้า) — ช่องเตี้ยลง 26 -> 15
+  var W=360, gap=2.4, cw=(W-gap*23)/24, cy=2, ch=15;
+  var o = ['<svg viewBox="0 0 '+W+' 32" role="img" aria-label="24 ช่อง ชั่วโมงละ 1 ช่อง">'];
   for(k=0;k<24;k++){
     var c = H[k], x = k*(cw+gap), col;
     if(!c.any) col = "var(--surface-2)";                        // ยังไม่มีข้อมูลชั่วโมงนั้น
@@ -864,23 +872,18 @@ function dayStrip(d){
     else if(c.dis >= c.buy) col = STRIP_DIS;                     // ใช้แบตเป็นหลัก
     else col = STRIP_BUY;                                        // ซื้อไฟ/นิ่ง
     o.push('<rect x="'+x.toFixed(2)+'" y="'+cy+'" width="'+cw.toFixed(2)+'" height="'+ch+
-           '" rx="3" fill="'+col+'"/>');
+           '" rx="2.5" fill="'+col+'"/>');
   }
   for(var hh=0; hh<=24; hh+=6){
     var lx = hh===0 ? 0 : (hh===24 ? W : hh*(cw+gap) - gap/2);
-    o.push('<text class="hr" x="'+lx.toFixed(1)+'" y="'+(cy+ch+15)+'" text-anchor="'+
-           (hh===0?'start':(hh===24?'end':'middle'))+'">'+hh+':00</text>');
+    o.push('<text class="hr" x="'+lx.toFixed(1)+'" y="'+(cy+ch+12)+'" text-anchor="'+
+           (hh===0?'start':(hh===24?'end':'middle'))+'">'+hh+'</text>');
   }
   o.push('</svg>');
-  var hm = function(m){ return Math.floor(m/60)+":"+("0"+Math.round(m%60)).slice(-2); };
+  // 2026-09-22 ตัด legend + คำอธิบายทิ้งทั้งหมด — Napon สั่ง (กินความสูงจนล้นจอมือถือ)
+  // 🔵 เวลารวมรายสถานะ (tot) ยังคำนวณอยู่ แต่ไม่ได้แสดง เอากลับมาได้ทุกเมื่อ
   return '<div class="strip">'+o.join('')+'</div>'
-    + '<div class="stripLeg">'
-    +   '<span><i style="background:'+STRIP_CHG+'"></i>ชาร์จเข้าแบต '+hm(tot.chg)+' ชม.</span>'
-    +   '<span><i style="background:'+STRIP_DIS+'"></i>ใช้ไฟจากแบต '+hm(tot.dis)+' ชม.</span>'
-    +   '<span><i style="background:'+STRIP_BUY+'"></i>ซื้อไฟ/นิ่ง '+hm(tot.buy)+' ชม.</span>'
-    + '</div>'
-    + (n ? '<p class="note">1 ช่อง = 1 ชั่วโมง ลงสีตามสถานะที่กินเวลามากสุดในชั่วโมงนั้น · ตัวเลขข้างบนเป็นเวลารวมจริงราย 5 นาที</p>'
-         : '<p class="note">ยังไม่มีข้อมูลราย 5 นาทีของวันนี้</p>');
+    + (n ? '' : '<p class="note">ยังไม่มีข้อมูลของวันนี้</p>');
 }
 
 function pflow(pv, load, batt, grid, soc){
