@@ -49,10 +49,10 @@
 html,body{margin:0;background:var(--plane);color:var(--ink);
   font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Thai",sans-serif}
 body{display:flex;justify-content:center;padding:0 0 env(safe-area-inset-bottom)}
-.app{width:100%;max-width:480px;padding:14px 14px 96px}
+.app{width:100%;max-width:480px;padding:10px 12px 60px}   /* 2026-09-22 บีบให้พอดีจอ S24U */
 
 /* ---------- chrome ---------- */
-header{display:flex;align-items:center;gap:10px;padding:6px 2px 12px}
+header{display:flex;align-items:center;gap:10px;padding:2px 2px 7px}
 header h1{font-size:15px;font-weight:600;margin:0;letter-spacing:-.01em}
 header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:right;line-height:1.35}
 .iconbtn{border:1px solid var(--ring);background:var(--surface);color:var(--ink-2);
@@ -60,7 +60,7 @@ header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:righ
 .iconbtn:active{transform:scale(.94)}
 
 .card{background:var(--surface);border:1px solid var(--ring);border-radius:16px;
-  padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}
+  padding:11px 12px;margin-bottom:6px;box-shadow:var(--shadow)}
 .card h2{font-size:12px;font-weight:600;color:var(--ink-2);margin:0 0 2px;
   letter-spacing:.02em;display:flex;align-items:center;gap:6px}
 .card h2 .badge{margin-left:auto;font-size:10px;font-weight:600;padding:2px 7px;
@@ -82,14 +82,17 @@ header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:righ
 
 /* ---------- hero ---------- */
 .hero{display:flex;align-items:center;gap:16px}
+/* 2026-09-22 หัวข้อ "Battery" กลางการ์ด แทนป้ายเล็กที่เคยอยู่ในโดนัท */
+.heroTitle{font-size:19px;font-weight:700;text-align:center;letter-spacing:.01em;
+  margin:0 0 9px;line-height:1.1}
 .ring{width:108px;height:108px;flex-shrink:0;position:relative}
 .ring .val{position:absolute;inset:0;display:flex;flex-direction:column;
   align-items:center;justify-content:center}
-.ring .val b{font-size:29px;font-weight:600;line-height:1;letter-spacing:-.02em}
-.ring .val span{font-size:10px;color:var(--muted);margin-top:3px}
+.ring .val b{font-size:36px;font-weight:600;line-height:1;letter-spacing:-.02em}
+.ring .val b .pc{font-size:18px;font-weight:600;color:inherit;opacity:.75}
 .pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;
   padding:4px 11px;border-radius:999px}
-.hero .meta{font-size:12px;color:var(--ink-2);line-height:1.9;margin-top:8px}
+.hero .meta{font-size:12px;color:var(--ink-2);line-height:1.6;margin-top:6px}
 .hero .meta b{font-variant-numeric:tabular-nums}
 
 /* ---------- tiles ---------- */
@@ -128,7 +131,7 @@ header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:righ
    เส้นจาง = เส้นทางที่มีอยู่ · เส้นประวิ่ง = มีไฟไหลอยู่จริงตอนนี้
    ทิศวิ่ง = ทิศของ path (จุดเริ่ม -> จุดจบ) ⇒ โค้ดสลับต้น/ปลายตามเครื่องหมายของค่า
    ความเร็ว = ผูกกับกำลังไฟจริงผ่าน --sp (ยิ่งเยอะยิ่งเร็ว) ไม่ใช่ความเร็วคงที่ */
-.pflow svg{display:block;width:100%;height:auto;overflow:visible}
+.pflow svg{display:block;width:100%;max-width:280px;margin:0 auto;height:auto;overflow:visible}
 .pf-line{fill:none;stroke-width:2.5;stroke-linecap:round;opacity:.22}
 .pf-dash{fill:none;stroke-width:2.5;stroke-linecap:round;stroke-dasharray:7 13;
   animation:pfrun var(--sp,1.6s) linear infinite}
@@ -595,8 +598,10 @@ function ring(soc){
     '<circle cx="54" cy="54" r="'+R+'" fill="none" stroke="var(--line)" stroke-width="9"/>'+
     '<circle cx="54" cy="54" r="'+R+'" fill="none" stroke="'+col+'" stroke-width="9" stroke-linecap="round"'+
     ' stroke-dasharray="'+(C*pct/100).toFixed(1)+' '+C.toFixed(1)+'" transform="rotate(-90 54 54)"/>'+
+    // 2026-09-22 เอาป้าย "แบตเตอรี่" ออกจากในโดนัท — ย้ายขึ้นไปเป็นหัวข้อ "Battery" กลางการ์ด
+    //            แล้วขยายตัวเลข % ให้ใหญ่ขึ้นแทนที่ว่างที่ได้คืนมา (Napon สั่ง)
     '</svg><div class="val"><b style="color:'+col+'">'+(soc===null?"—":f(soc))+
-    '<span style="font-size:15px">%</span></b><span>แบตเตอรี่</span></div></div>';
+    '<span class="pc">%</span></b></div></div>';
 }
 
 /* --- 3d) power flow — ผังไฟวิ่ง แดด/แบต/บ้าน/กริด ---
@@ -721,6 +726,7 @@ function viewNow(d){
 
   return ''
   + '<div class="card">'
+  +   '<div class="heroTitle">Battery</div>'
   +   '<div class="hero">'+ring(soc)
   +     '<div style="min-width:0">'
   +       '<span class="pill" style="background:color-mix(in srgb,'+col+' 16%,transparent);color:'+col+'">'
@@ -734,7 +740,9 @@ function viewNow(d){
 
   + '<div class="card">'
   +   '<h2>ไฟกำลังวิ่งไปไหน<span class="badge">ตอนนี้</span></h2>'
-  +   '<p class="why">ค่ากริดคำนวณจากสมดุล <b>แดด + แบต + กริด = บ้าน</b> (ไม่ได้อ่านจาก sensor กริดตรง ๆ)</p>'
+  // 2026-09-22 เอาคำอธิบาย "ค่ากริดคำนวณจากสมดุล…" ออก — Napon สั่ง ให้พอดีจอมือถือไม่ต้องเลื่อน
+  // 🔵 ตัดได้โดยไม่เสียความถูกต้อง เพราะข้อความนั้นพูดแบบเหมารวมทั้งที่ getData_() อ่าน wirePower
+  //    จาก Deye ก่อนเสมอ (ดู meta.gridFrom) จะคำนวณจากสมดุลเฉพาะตอนไม่มีค่านั้น
   +   pflow(pv, load, batt, grid, soc)
   + '</div>'
 
