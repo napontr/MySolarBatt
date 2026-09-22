@@ -1,133 +1,1305 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<meta name="theme-color" content="#28a745">
-<title>My Solar Battery</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#eda100">
+<title>Solar</title>
 <link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2218%22%20fill%3D%22%2328a745%22%2F%3E%3Crect%20x%3D%2217.6%22%20y%3D%2233.2%22%20width%3D%2260%22%20height%3D%2233.5%22%20rx%3D%227.4%22%20fill%3D%22none%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%225.2%22%2F%3E%3Crect%20x%3D%2279.4%22%20y%3D%2243.2%22%20width%3D%224.5%22%20height%3D%2213.5%22%20rx%3D%221.8%22%20fill%3D%22%23ffffff%22%2F%3E%3Crect%20x%3D%2227.5%22%20y%3D%2243.1%22%20width%3D%2229%22%20height%3D%2213.7%22%20rx%3D%223%22%20fill%3D%22%23ffffff%22%2F%3E%3C%2Fsvg%3E">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
-  :root{
-    --bg:#f4f5f7; --card:#ffffff; --text:#1c1c1e; --muted:#8a8a8e;
-    --line:#e5e5ea; --green:#28a745; --amber:#e8910b; --red:#e24b4a; --blue:#3b82f6;
+/* ===================================================================
+   สี: ชุด categorical ที่ผ่าน validator ของ skill dataviz แล้ว
+   node scripts/validate_palette.js "#eda100,#1baf7a,#e34948" --mode light  -> PASS
+   node scripts/validate_palette.js "#c98500,#199e70,#e66767" --mode dark   -> PASS
+   node scripts/validate_palette.js "#2a78d6,#1baf7a,#4a3aa7" ทั้ง 2 โหมด   -> PASS
+   คู่ที่อยู่ใน warn band (แดง<->เขียว CVD 6.5-6.9) ใช้ได้เพราะมี secondary
+   encoding ครบ: ป้ายตัวเลขติดบนแท่ง + legend + ตารางข้อมูล
+   🔴 ห้ามสลับสีตามอันดับ/ตามลำดับที่มาก่อนหลัง — สีผูกกับ "ของสิ่งนั้น" ถาวร
+   =================================================================== */
+:root{
+  color-scheme: light;
+  --plane:#f3f3f1; --surface:#fcfcfb; --surface-2:#f3f3f1;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --line:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,.10);
+  --solar:#eda100; --batt:#1baf7a; --grid:#e34948; --home:#2a78d6; --export:#4a3aa7;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --shadow:0 1px 2px rgba(11,11,11,.04), 0 8px 24px rgba(11,11,11,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --plane:#0d0d0d; --surface:#1a1a19; --surface-2:#242422;
+    --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --line:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.10);
+    --solar:#c98500; --batt:#199e70; --grid:#e66767; --home:#3987e5; --export:#9085e9;
+    --shadow:none;
   }
-  @media (prefers-color-scheme: dark){
-    :root{ --bg:#000; --card:#1c1c1e; --text:#f2f2f7; --muted:#8a8a8e;
-           --line:#2c2c2e; --green:#30d158; --amber:#ffb02e; --red:#ff453a; --blue:#5aa7ff; }
-  }
-  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  body{ margin:0; background:var(--bg); color:var(--text);
-        font-family:-apple-system,"Segoe UI",Roboto,sans-serif;
-        display:flex; justify-content:center; min-height:100vh; }
-  .wrap{ width:100%; max-width:420px; padding:24px 16px 32px; }
-  .card{ background:var(--card); border:0.5px solid var(--line); border-radius:20px; padding:18px; }
-  .title{ font-size:16px; font-weight:500; text-align:center; margin:0; }
-  .sub{ font-size:12px; color:var(--muted); text-align:center; margin:4px 0 0; }
-  .big{ font-size:60px; font-weight:500; line-height:1; text-align:center; }
-  .big small{ font-size:24px; }
-  .pill{ display:flex; align-items:center; justify-content:center; gap:6px; width:fit-content;
-         margin:12px auto 0; font-size:13px; padding:5px 14px; border-radius:999px; }
-  .bar{ height:12px; background:var(--line); border-radius:999px; overflow:hidden; margin:18px 0 4px; }
-  .bar > div{ height:100%; border-radius:999px; transition:width .4s; }
-  .sec{ font-size:12px; color:var(--muted); font-weight:500; margin:22px 2px 12px; letter-spacing:.04em; }
-  .donutRow{ display:flex; align-items:center; gap:20px; margin-bottom:14px; }
-  .donut{ width:140px; height:140px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
-  .donut .hole{ width:92px; height:92px; border-radius:50%; background:var(--card); display:flex; flex-direction:column; align-items:center; justify-content:center; }
-  .leg{ font-size:13px; line-height:2.0; }
-  .dot{ font-size:11px; }
-  .grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  .stat{ background:var(--bg); border-radius:13px; padding:10px 12px; }
-  .stat .lbl{ font-size:11px; color:var(--muted); margin-bottom:3px; }
-  .stat .val{ font-size:18px; font-weight:600; }
-  .stat .val span{ font-size:10px; color:var(--muted); }
-  .foot{ font-size:11px; color:var(--muted); text-align:center; margin-top:16px; }
-  .err{ color:var(--red); font-size:13px; text-align:center; word-break:break-all; }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --plane:#0d0d0d; --surface:#1a1a19; --surface-2:#242422;
+  --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+  --line:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.10);
+  --solar:#c98500; --batt:#199e70; --grid:#e66767; --home:#3987e5; --export:#9085e9;
+  --shadow:none;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--plane);color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Thai",sans-serif}
+body{display:flex;justify-content:center;padding:0 0 env(safe-area-inset-bottom)}
+.app{width:100%;max-width:480px;padding:14px 14px 96px}
+
+/* ---------- chrome ---------- */
+header{display:flex;align-items:center;gap:10px;padding:6px 2px 12px}
+header h1{font-size:15px;font-weight:600;margin:0;letter-spacing:-.01em}
+header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:right;line-height:1.35}
+.iconbtn{border:1px solid var(--ring);background:var(--surface);color:var(--ink-2);
+  width:32px;height:32px;border-radius:10px;font-size:14px;cursor:pointer;flex-shrink:0}
+.iconbtn:active{transform:scale(.94)}
+
+.card{background:var(--surface);border:1px solid var(--ring);border-radius:16px;
+  padding:14px;margin-bottom:10px;box-shadow:var(--shadow)}
+.card h2{font-size:12px;font-weight:600;color:var(--ink-2);margin:0 0 2px;
+  letter-spacing:.02em;display:flex;align-items:center;gap:6px}
+.card h2 .badge{margin-left:auto;font-size:10px;font-weight:600;padding:2px 7px;
+  border-radius:999px;background:var(--surface-2);color:var(--ink-2)}
+.card .why{font-size:11px;color:var(--muted);margin:0 0 10px;line-height:1.5}
+
+/* ---------- tabs ---------- */
+.tabs{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;
+  background:color-mix(in srgb, var(--plane) 88%, transparent);
+  backdrop-filter:blur(14px);border-top:1px solid var(--ring);z-index:20;
+  padding-bottom:env(safe-area-inset-bottom)}
+.tabs .inner{display:flex;width:100%;max-width:480px}
+.tabs button{flex:1;border:0;background:none;color:var(--muted);padding:9px 2px 11px;
+  font-size:10.5px;font-weight:500;cursor:pointer;display:flex;flex-direction:column;
+  align-items:center;gap:3px;font-family:inherit}
+.tabs button .g{font-size:17px;line-height:1}
+.tabs button[aria-selected="true"]{color:var(--ink)}
+.tabs button[aria-selected="true"] .g{transform:translateY(-1px)}
+
+/* ---------- hero ---------- */
+.hero{display:flex;align-items:center;gap:16px}
+.ring{width:108px;height:108px;flex-shrink:0;position:relative}
+.ring .val{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center}
+.ring .val b{font-size:29px;font-weight:600;line-height:1;letter-spacing:-.02em}
+.ring .val span{font-size:10px;color:var(--muted);margin-top:3px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;
+  padding:4px 11px;border-radius:999px}
+.hero .meta{font-size:12px;color:var(--ink-2);line-height:1.9;margin-top:8px}
+.hero .meta b{font-variant-numeric:tabular-nums}
+
+/* ---------- tiles ---------- */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tiles.c3{grid-template-columns:1fr 1fr 1fr}
+.tile{background:var(--surface-2);border-radius:12px;padding:9px 11px;min-width:0}
+.tile .l{font-size:10.5px;color:var(--muted);margin-bottom:2px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.tile .v{font-size:19px;font-weight:600;letter-spacing:-.02em;line-height:1.2}
+.tile .v u{font-size:10px;font-weight:500;color:var(--muted);text-decoration:none;margin-left:2px}
+.tile .s{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* สีการ์ดตาม "ความหมาย" ไม่ใช่ตามลำดับ — ใช้สีชุดเดียวกับผังไฟ ⇒ เหลืองในกราฟ = เหลืองในการ์ด = แดด
+   🔴 ห้ามสลับสีตามตำแหน่ง/อันดับ · สีผูกกับความหมายถาวร (กฎเดียวกับหัวไฟล์)
+   ตัวเลขเป็น 19px ตัวหนา = large text ⇒ เกณฑ์ contrast 3:1 ไม่ใช่ 4.5:1 · ป้ายกับหมายเหตุยังเป็น --muted เหมือนเดิม */
+.tile.t{background:color-mix(in srgb,var(--tc) 9%,var(--surface-2));box-shadow:inset 3px 0 0 var(--tc)}
+.tile.t .v{color:var(--tc)}
+.t-good{--tc:var(--batt)}    /* เขียว — ไม่ต้องซื้อไฟ · ประหยัดได้ · มูลค่าที่ได้คืน */
+.t-gen {--tc:var(--solar)}   /* เหลือง — การผลิต */
+.t-self{--tc:var(--home)}    /* น้ำเงิน — พึ่งตัวเอง · ยอดผลิตสะสม */
+.t-cost{--tc:var(--grid)}    /* แดง — ซื้อไฟ · ค่าไฟ */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .tile.t{background:color-mix(in srgb,var(--tc) 14%,var(--surface-2))}
+}
+:root[data-theme="dark"] .tile.t{background:color-mix(in srgb,var(--tc) 14%,var(--surface-2))}
+
+/* ---------- flow ---------- */
+.flow{display:flex;align-items:stretch;gap:8px;margin-top:4px}
+.node{flex:1;background:var(--surface-2);border-radius:12px;padding:9px 8px;text-align:center}
+.node .n{font-size:10.5px;color:var(--muted)}
+.node .w{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.node .w u{font-size:9px;color:var(--muted);text-decoration:none}
+.arrow{display:flex;align-items:center;color:var(--muted);font-size:13px}
+
+/* ---------- power flow — ไฟวิ่งตามทิศจริง ----------
+   เส้นจาง = เส้นทางที่มีอยู่ · เส้นประวิ่ง = มีไฟไหลอยู่จริงตอนนี้
+   ทิศวิ่ง = ทิศของ path (จุดเริ่ม -> จุดจบ) ⇒ โค้ดสลับต้น/ปลายตามเครื่องหมายของค่า
+   ความเร็ว = ผูกกับกำลังไฟจริงผ่าน --sp (ยิ่งเยอะยิ่งเร็ว) ไม่ใช่ความเร็วคงที่ */
+.pflow svg{display:block;width:100%;height:auto;overflow:visible}
+.pf-line{fill:none;stroke-width:2.5;stroke-linecap:round;opacity:.22}
+.pf-dash{fill:none;stroke-width:2.5;stroke-linecap:round;stroke-dasharray:7 13;
+  animation:pfrun var(--sp,1.6s) linear infinite}
+@keyframes pfrun{to{stroke-dashoffset:-20}}
+.pf-node{fill:var(--surface-2);stroke:var(--ring);stroke-width:1}
+.pf-lab{font-size:10.5px;fill:var(--muted)}
+.pf-val{font-size:14.5px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.pf-u{font-size:8.5px;fill:var(--muted);font-weight:400}
+.pf-rays{transform-box:fill-box;transform-origin:center;animation:pfspin 26s linear infinite}
+@keyframes pfspin{to{transform:rotate(360deg)}}
+.pf-off{opacity:.34}
+/* เคารพคนที่ปิดแอนิเมชันในระบบ — เส้นประยังอยู่ แค่ไม่วิ่ง จึงยังอ่านออกว่าเส้นไหนมีไฟ */
+@media (prefers-reduced-motion:reduce){
+  .pf-dash,.pf-rays{animation:none}
+  .pf-dash{opacity:.9}
+}
+
+/* ---------- charts ---------- */
+.chart{position:relative;width:100%;touch-action:pan-y}
+.chart svg{display:block;width:100%;overflow:visible}
+.tip{position:absolute;pointer-events:none;background:var(--surface);
+  border:1px solid var(--ring);border-radius:9px;padding:6px 9px;font-size:11px;
+  box-shadow:0 4px 16px rgba(0,0,0,.14);z-index:5;opacity:0;transition:opacity .1s;
+  white-space:nowrap;line-height:1.6}
+.tip.on{opacity:1}
+.tip b{font-variant-numeric:tabular-nums}
+.legend{display:flex;flex-wrap:wrap;gap:4px 13px;font-size:11px;color:var(--ink-2);margin-top:9px}
+.legend i{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px;
+  vertical-align:-1px;font-style:normal}
+
+/* ---------- balance bars ---------- */
+.bal{margin-top:11px}
+.bal .row{margin-bottom:11px}
+.bal .cap{display:flex;font-size:11px;color:var(--muted);margin-bottom:5px}
+.bal .cap b{margin-left:auto;color:var(--ink);font-variant-numeric:tabular-nums}
+.bal .track{display:flex;height:30px;gap:2px;border-radius:7px;overflow:hidden}
+.bal .seg{display:flex;align-items:center;justify-content:center;font-size:10.5px;
+  font-weight:600;color:#fff;min-width:2px;overflow:hidden;white-space:nowrap}
+.bal .seg.dim{background:var(--line)!important;color:var(--ink-2)}
+
+/* ---------- misc ---------- */
+.recon{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-2);
+  background:var(--surface-2);border-radius:9px;padding:7px 10px;margin-top:10px;line-height:1.5}
+.recon .st{font-weight:700;flex-shrink:0}
+.note{font-size:10.5px;color:var(--muted);line-height:1.6;margin-top:9px}
+table{width:100%;border-collapse:collapse;font-size:11px;font-variant-numeric:tabular-nums}
+th,td{padding:5px 4px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--muted);font-weight:500;font-size:10px}
+th:first-child,td:first-child{text-align:left}
+details>summary{font-size:11px;color:var(--ink-2);cursor:pointer;padding:7px 0;list-style:none}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:"▸ ";color:var(--muted)}
+details[open]>summary::before{content:"▾ "}
+.field{display:flex;align-items:center;gap:9px;margin-bottom:9px;font-size:12px}
+.field label{flex:1;color:var(--ink-2)}
+.field input,.field select{width:112px;background:var(--surface-2);color:var(--ink);
+  border:1px solid var(--ring);border-radius:9px;padding:6px 9px;font-size:12px;
+  font-family:inherit;text-align:right}
+.field input.wide{width:100%;text-align:left;font-size:11px}
+.seg-ctl{display:flex;gap:4px;background:var(--surface-2);padding:3px;border-radius:11px}
+.seg-ctl button{flex:1;border:0;background:none;color:var(--ink-2);font-family:inherit;
+  font-size:11.5px;padding:7px 2px;border-radius:9px;cursor:pointer;white-space:nowrap}
+.seg-ctl button.on{background:var(--surface);color:var(--ink);font-weight:600;
+  box-shadow:0 1px 2px rgba(0,0,0,.10)}
+.btn{border:1px solid var(--ring);background:var(--surface-2);color:var(--ink);
+  font-family:inherit;font-size:12px;padding:9px 14px;border-radius:11px;cursor:pointer;
+  margin:0 8px 8px 0}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--home);border-color:var(--home);color:#fff;font-weight:600}
+.empty{font-size:12px;color:var(--muted);text-align:center;padding:22px 8px;line-height:1.7}
+.err{color:var(--crit);font-size:12px;line-height:1.7;word-break:break-word}
+.skel{height:13px;border-radius:5px;background:var(--surface-2);animation:p 1.3s infinite}
+@keyframes p{50%{opacity:.45}}
 </style>
 </head>
 <body>
-  <div class="wrap" onclick="load()">
-    <div class="card">
-      <p class="title">My Solar Battery</p>
-      <p class="sub">Online Inverter 1</p>
-      <div id="content"><div class="big" style="color:var(--muted)">…</div></div>
-      <p class="foot" id="foot">tap anywhere to refresh</p>
-    </div>
-  </div>
+<div class="app">
+  <header>
+    <h1>Solar</h1>
+    <button class="iconbtn" id="btnTheme" title="สลับธีม">◐</button>
+    <button class="iconbtn" id="btnCfg" title="ตั้งค่า">⚙</button>
+    <div class="stamp" id="stamp">กำลังโหลด…</div>
+  </header>
+  <main id="view"></main>
+</div>
+
+<nav class="tabs"><div class="inner">
+  <button data-tab="now"  aria-selected="true"><span class="g">⚡</span>ตอนนี้</button>
+  <button data-tab="day"  aria-selected="false"><span class="g">☀</span>วันนี้</button>
+  <button data-tab="cyc"  aria-selected="false"><span class="g">฿</span>รอบบิล</button>
+  <button data-tab="hist" aria-selected="false"><span class="g">▤</span>ประวัติ</button>
+</div></nav>
 
 <script>
-  const API = "https://script.google.com/macros/s/AKfycbwTr9FGZYAWcuI4UUx0JWTwgdpyrr8IPooeCNYBj0SEjproemzfiznJOiDjyPcYbBHB/exec";   // URL /exec ของคุณ
+/* ===================================================================
+   0) config
+   =================================================================== */
+var DEFAULT_API = "https://script.google.com/macros/s/AKfycbwTr9FGZYAWcuI4UUx0JWTwgdpyrr8IPooeCNYBj0SEjproemzfiznJOiDjyPcYbBHB/exec";
+/* เปิดด้วย ...index.html?api=<url ของ /exec>&key=<ถ้ามี> ได้
+   ใช้ตอนอยากชี้ไป deployment เทสโดยไม่ต้องเข้าไปแก้ใน ⚙
+   ค่าที่ส่งมาทาง URL ถูกบันทึกลงเครื่องเลย เปิดครั้งหน้าไม่ต้องใส่ซ้ำ */
+(function(){
+  try{
+    var q = new URLSearchParams(location.search);
+    ["api","key"].forEach(function(k){
+      var v = q.get(k);
+      if(v){ try{ localStorage.setItem("solar3_"+k, v); }catch(e){} }
+    });
+  }catch(e){}
+})();
 
-  function n(v){ return (v===null||v===undefined)?null:Number(v); }
-  function r1(v){ return v===null?'—':(Math.round(v*10)/10); }
-  function colorFor(soc){ if(soc===null) return 'var(--muted)'; if(soc>=50) return 'var(--green)'; if(soc>=20) return 'var(--amber)'; return 'var(--red)'; }
+var S = {
+  api:   ls("api", DEFAULT_API),
+  rate:  +ls("rate", "4.40"),      // 🟡 ค่าตั้งต้น ยังไม่ได้ยืนยันกับบิล PEA จริง — แก้ได้ที่ ⚙
+  cap:   +ls("cap", "0"),          // ความจุแบต kWh (0 = ไม่รู้ -> ซ่อนการ์ดที่ต้องใช้)
+  key:   ls("key", ""),
+  tab:   "now",
+  range: ls("range", "30"),        // มุมมองหน้าประวัติ: 30 | 90 | month | cycle
+  d:     null,
+  err:   null,
+  sync:  null                      // ผลการ sync รอบล่าสุด (มีกี่วันใหม่)
+};
+function ls(k, dflt){ try{ var v = localStorage.getItem("solar3_"+k); return v===null?dflt:v; }catch(e){ return dflt; } }
+function save(k, v){ try{ localStorage.setItem("solar3_"+k, v); }catch(e){} }
 
-  function render(d){
-    var c=document.getElementById('content');
-    if(!d||!d.ok){ c.innerHTML='<p class="err">เชื่อมต่อไม่ได้<br>'+((d&&d.err)||'')+'</p>'; document.getElementById('foot').textContent='tap to retry'; return; }
+/* -------------------------------------------------------------------
+   คลังข้อมูลในเครื่อง (localStorage)
+   เก็บเป็น map date -> [gen,use,imp,exp,chg,dis] เพื่อให้ merge แบบ upsert ได้
+   โหลดครั้งถัดไปขอ server แค่ ?since=<วันล่าสุดที่มี> เท่านั้น
+   ~1,100 วัน ≈ 50 KB (เพดาน localStorage ~5 MB) จึงเก็บทั้งหมดได้จริง
+   ------------------------------------------------------------------- */
+var STORE = { map:{}, dirty:false };
+function storeLoad(){
+  try{
+    var raw = localStorage.getItem("solar3_days");
+    STORE.map = raw ? JSON.parse(raw) : {};
+  }catch(e){ STORE.map = {}; }
+}
+function storeMerge(rows){
+  var added = 0, upd = 0;
+  (rows||[]).forEach(function(r){
+    var d = r[0]; if(!d) return;
+    var v = [r[1],r[2],r[3],r[4],r[5],r[6]];
+    if(STORE.map[d]===undefined) added++; else upd++;
+    STORE.map[d] = v;
+  });
+  if(added||upd){ STORE.dirty = true; storeSave(); }
+  return { added:added, updated:upd };
+}
+function storeSave(){
+  try{ localStorage.setItem("solar3_days", JSON.stringify(STORE.map)); STORE.dirty=false; }
+  catch(e){ S.storeErr = "เก็บลงเครื่องไม่ได้: "+e; }
+}
+function storeRows(){
+  return Object.keys(STORE.map).sort().map(function(d){
+    var v = STORE.map[d]; return [d, v[0], v[1], v[2], v[3], v[4], v[5]];
+  });
+}
+function storeMax(){ var k = Object.keys(STORE.map); return k.length ? k.sort()[k.length-1] : null; }
+function storeMin(){ var k = Object.keys(STORE.map); return k.length ? k.sort()[0] : null; }
+function storeCount(){ return Object.keys(STORE.map).length; }
+function storeBytes(){ try{ return (localStorage.getItem("solar3_days")||"").length; }catch(e){ return 0; } }
 
-    var soc=d.soc, batt=d.batt, col=colorFor(soc);
-    var state = batt===null?'—':(batt<0?'Charging':(batt>0?'Discharging':'Idle'));  // batt<0=ชาร์จเข้า
+/* ===================================================================
+   1) utils
+   =================================================================== */
+function n1(v){ return (v===null||v===undefined||isNaN(v))?null:Math.round(v*10)/10; }
+function f(v, dec){ if(v===null||v===undefined||isNaN(v)) return "—";
+  return Number(v).toLocaleString("th-TH",{minimumFractionDigits:dec||0,maximumFractionDigits:dec||0}); }
+function fw(v){ return v===null||v===undefined||isNaN(v) ? "—" : f(Math.round(v)); }
+function esc(s){ return String(s).replace(/[&<>"]/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+function hhmm(mins){ var h=Math.floor(mins/60), m=mins%60; return ("0"+h).slice(-2)+":"+("0"+m).slice(-2); }
+function dLabel(iso){ var p=String(iso).split("-"); return p.length===3 ? (+p[2])+"/"+(+p[1]) : iso; }
+function cssv(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function socColor(soc){ return soc===null?"var(--muted)":(soc>=50?"var(--good)":(soc>=20?"var(--warn)":"var(--crit)")); }
 
-    // ----- รายวัน -----
-    var cons=d.cons, purchase=d.purchase, discharge=d.discharge||0;
-    var solarSelf = (cons!==null&&purchase!==null) ? Math.max(0, cons - purchase - discharge) : null;
-    var selfSuff  = (cons>0&&purchase!==null) ? Math.round((cons-purchase)/cons*100) : null;
+/* ===================================================================
+   2) derive — ทุกตัวเลขที่ไม่ได้มาจาก API ตรง ๆ คำนวณที่เดียวตรงนี้
+      กติกา: ค่าที่ "อนุมานเอา" ต้องมีชื่อบอกว่าอนุมาน และต้องโชว์ส่วนต่างเสมอ
+   =================================================================== */
+function derive(d){
+  var w = d.now || {};
+  ["soc","batt","pv","load","grid"].forEach(function(k){
+    if(w[k]===undefined || w[k]==="" || (typeof w[k]==="number" && isNaN(w[k]))) w[k] = null;
+  });
+  d.now = w;
+  var days = (d.days||[]).map(function(r){
+    var o = { date:r[0], gen:r[1], use:r[2], imp:r[3], exp:r[4], chg:r[5], dis:r[6] };
+    var use=o.use||0, imp=o.imp||0, dis=o.dis||0, gen=o.gen||0, chg=o.chg||0, exp=o.exp||0;
+    o.self = Math.max(0, use - imp - dis);              // แดดที่ใช้ตรงในบ้าน
+    o.ss   = use>0 ? (use-imp)/use*100 : null;          // พึ่งตัวเอง %
+    o.loss = gen - (o.self + chg + exp);                // ส่วนต่างฝั่งผลิต (แปลงไฟ/วัดคนละจุด)
+    o.cost = imp*S.rate;
+    o.saved= (o.self + dis)*S.rate;
+    return o;
+  });
+  d._days = days;
+  d._byDate = {}; days.forEach(function(x){ d._byDate[x.date]=x; });
+  d._today = d._byDate[d.today] || null;
+  var it = d.intraday || {t:[]};
+  d._intra = it;
+  // สถิติในวัน — จาก array ราย 5 นาทีที่ V2 ทิ้งไปทั้งก้อน
+  var peak=null, peakAt=null, socMin=null, socMax=null, coverMin=0, lastT=null;
+  var gridFreeMin=0, impPeak=null, hasGrid=!!(it.grid && it.grid.length);
+  for(var i=0;i<(it.t||[]).length;i++){
+    var pv=it.pv[i], ld=it.load[i], sc=it.soc[i], t=it.t[i];
+    var gw = hasGrid ? it.grid[i] : null;      // wirePower: บวก = ซื้อเข้า, ลบ = ไหลออก
+    if(pv!==null && (peak===null||pv>peak)){ peak=pv; peakAt=t; }
+    if(sc!==null){ if(socMin===null||sc<socMin) socMin=sc; if(socMax===null||sc>socMax) socMax=sc; }
+    var span = lastT===null ? 0 : Math.min(30, t-lastT);
+    if(pv!==null && ld!==null && pv>=ld) coverMin += span;
+    if(gw!==null && gw<50) gridFreeMin += span;   // <50W = ถือว่าไม่ได้ซื้อไฟ
+    if(gw!==null && (impPeak===null||gw>impPeak)) impPeak = gw;
+    lastT = t;
+  }
+  d._stat = { peak:peak, peakAt:peakAt, socMin:socMin, socMax:socMax, coverMin:coverMin,
+              gridFreeMin:gridFreeMin, hasGrid:hasGrid, impPeak:impPeak,
+              samples:(it.t||[]).length, lastT:lastT };
+  // รอบบิล
+  var c = d.cycle||{};
+  d._cyc  = cycleStats(days, c.start, c.end, d.today);
+  d._prev = cycleStats(days, c.prevStart, c.prevEnd, null);
+  return d;
+}
+function cycleStats(days, start, end, today){
+  if(!start) return null;
+  var rows = days.filter(function(x){ return x.date>=start && x.date<=end; });
+  var done = rows.filter(function(x){ return x.date!==today; });   // วันนี้ยังไม่จบ -> ไม่เอาไปหารเฉลี่ย
+  var sum = function(arr,k){ return arr.reduce(function(a,b){ return a+(b[k]||0); },0); };
+  var totalDays = Math.round((new Date(end)-new Date(start))/86400000)+1;
+  var avgImp = done.length ? sum(done,"imp")/done.length : null;
+  return {
+    start:start, end:end, rows:rows, days:rows.length, doneDays:done.length, totalDays:totalDays,
+    imp:sum(rows,"imp"), exp:sum(rows,"exp"), gen:sum(rows,"gen"), use:sum(rows,"use"),
+    self:sum(rows,"self"), dis:sum(rows,"dis"),
+    cost:sum(rows,"imp")*S.rate, saved:sum(rows,"saved"),
+    avgImp:avgImp,
+    projImp: avgImp===null ? null : avgImp*totalDays,
+    projCost:avgImp===null ? null : avgImp*totalDays*S.rate,
+    missing: totalDays>=rows.length ? 0 : 0
+  };
+}
 
-    var donutHtml = '';
-    if (cons>0 && solarSelf!==null){
-      var sp = solarSelf/cons*100, gp = purchase/cons*100;
-      var grad = 'conic-gradient(var(--green) 0 '+sp+'%, var(--blue) '+sp+'% '+(sp+gp)+'%, var(--line) '+(sp+gp)+'% 100%)';
-      donutHtml =
-        '<div class="sec">TODAY</div>'
-       +'<div class="donutRow">'
-       + '<div class="donut" style="background:'+grad+'"><div class="hole">'
-       +   '<span style="font-size:11px;color:var(--muted)">ใช้</span>'
-       +   '<span style="font-size:24px;font-weight:600">'+r1(cons)+'</span>'
-       +   '<span style="font-size:10px;color:var(--muted)">kWh</span>'
-       + '</div></div>'
-       + '<div class="leg">'
-       +   '<div><span class="dot" style="color:var(--green)">●</span> แดด (ใช้ตรง) <b>'+r1(solarSelf)+'</b></div>'
-       +   '<div><span class="dot" style="color:var(--blue)">●</span> ซื้อจาก Grid <b>'+r1(purchase)+'</b></div>'
-       +   '<div><span class="dot" style="color:var(--muted)">●</span> แบตเตอรี่ <b>'+r1(discharge)+'</b></div>'
-       + '</div>'
-       +'</div>';
+/* -------------------------------------------------------------------
+   จัดกลุ่มข้อมูลย้อนหลัง — ใช้กับหน้า "ประวัติ"
+   วันที่ยังไม่จบ (วันนี้) ติดธง partial ทุกที่ ไม่ถูกนับในค่าเฉลี่ย
+   ------------------------------------------------------------------- */
+var TH_M = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+function monthLabel(ym){ var p=ym.split("-"); return TH_M[+p[1]-1]+" "+String(+p[0]+543).slice(-2); }
+function cycleKeyOf(iso, startDay){
+  var p = iso.split("-"), y=+p[0], m=+p[1], d=+p[2];
+  if(d < startDay){ m--; if(m<1){ m=12; y--; } }
+  return y+"-"+("0"+m).slice(-2)+"-"+("0"+startDay).slice(-2);
+}
+function groupRows(days, mode, today, startDay){
+  var src = days, keyOf, labOf;
+  if(mode==="30" || mode==="90"){
+    src = days.slice(-(+mode));
+    keyOf = function(x){ return x.date; };
+    labOf = function(k){ return dLabel(k); };
+  } else if(mode==="month"){
+    keyOf = function(x){ return x.date.slice(0,7); };
+    labOf = monthLabel;
+  } else {
+    keyOf = function(x){ return cycleKeyOf(x.date, startDay||17); };
+    // รอบบิลคาบ 2 เดือน — ป้ายต้องบอกทั้งคู่ ไม่งั้นแยกจากมุมมองรายเดือนไม่ออก
+    labOf = function(k){ var p=k.split("-"), m=+p[1]-1;
+      return TH_M[m]+"→"+TH_M[(m+1)%12]+" "+String(+p[0]+543).slice(-2); };
+  }
+  var by = {}, order = [];
+  src.forEach(function(x){
+    var k = keyOf(x);
+    if(!by[k]){ by[k] = { key:k, label:labOf(k), gen:0,use:0,imp:0,exp:0,chg:0,dis:0,self:0,
+                          nDays:0, partial:false, first:x.date, last:x.date }; order.push(k); }
+    var b = by[k];
+    b.gen+=x.gen||0; b.use+=x.use||0; b.imp+=x.imp||0; b.exp+=x.exp||0;
+    b.chg+=x.chg||0; b.dis+=x.dis||0; b.self+=x.self||0;
+    b.nDays++; b.last = x.date;
+    if(x.date===today) b.partial = true;
+  });
+  order.sort();
+  return order.map(function(k){
+    var b = by[k];
+    b.ss = b.use>0 ? (b.use-b.imp)/b.use*100 : null;
+    b.cost = b.imp*S.rate; b.saved = (b.self+b.dis)*S.rate;
+    return b;
+  });
+}
+
+/* ===================================================================
+   3) chart engine — SVG ล้วน ไม่มี library
+      กติกาที่บังคับตัวเองไว้ (skill dataviz):
+        • แกน y แกนเดียวต่อ panel เสมอ — kW กับ % อยู่คนละ panel ห้ามรวม
+        • เส้น 2px · จุด >=8px · ช่องว่าง 2px ระหว่าง segment ที่ติดกัน
+        • grid เส้นบาง สีจาง · ไม่มีตัวเลขบนทุกจุด ติดป้ายเฉพาะจุดที่ต้องอ่าน
+   =================================================================== */
+function mkSvg(w,h){ return ['<svg viewBox="0 0 '+w+' '+h+'" width="'+w+'" height="'+h+'" role="img">']; }
+function chartHost(id){ var el=document.getElementById(id); return el && el.clientWidth>0 ? el : null; }
+
+/* --- 3a) time series (เส้น/พื้นที่) สำหรับกราฟรายช่วงในวัน --- */
+function timeSeries(host, cfg){
+  var W = host.clientWidth, H = cfg.h||150, P = {t:12,r:8,b:20,l:34};
+  var xs = cfg.x, series = cfg.series;
+  if(!xs.length){ host.innerHTML = '<div class="empty">'+(cfg.empty||"ยังไม่มีข้อมูล")+'</div>'; return; }
+  var xMin = cfg.xMin!==undefined?cfg.xMin:xs[0], xMax = cfg.xMax!==undefined?cfg.xMax:xs[xs.length-1];
+  var yMax = cfg.yMax || 0;
+  series.forEach(function(s){ s.vals.forEach(function(v){ if(v!==null&&v>yMax) yMax=v; }); });
+  yMax = niceMax(yMax);
+  var px = function(x){ return P.l + (x-xMin)/(xMax-xMin||1)*(W-P.l-P.r); };
+  var py = function(y){ return P.t + (1-(y/(yMax||1)))*(H-P.t-P.b); };
+  var o = mkSvg(W,H);
+
+  // grid + y ticks
+  var ticks = cfg.yTicks || [0, yMax/2, yMax];
+  ticks.forEach(function(v){
+    o.push('<line x1="'+P.l+'" y1="'+py(v)+'" x2="'+(W-P.r)+'" y2="'+py(v)+
+      '" stroke="var(--line)" stroke-width="1"/>');
+    o.push('<text x="'+(P.l-6)+'" y="'+(py(v)+3.5)+'" text-anchor="end" font-size="9.5" fill="var(--muted)">'+
+      (cfg.yFmt?cfg.yFmt(v):f(v))+'</text>');
+  });
+  // x ticks
+  (cfg.xTicks||[]).forEach(function(t){
+    o.push('<text x="'+px(t.v)+'" y="'+(H-5)+'" text-anchor="middle" font-size="9.5" fill="var(--muted)">'+t.l+'</text>');
+  });
+
+  series.forEach(function(s){
+    var dLine=[], dArea=[], open=false;
+    for(var i=0;i<xs.length;i++){
+      var v=s.vals[i];
+      if(v===null||v===undefined){ open=false; continue; }
+      var X=px(xs[i]).toFixed(1), Y=py(v).toFixed(1);
+      if(!open){ dLine.push("M"+X+" "+Y); dArea.push("M"+X+" "+py(0).toFixed(1)+"L"+X+" "+Y); open=true; }
+      else { dLine.push("L"+X+" "+Y); dArea.push("L"+X+" "+Y); }
+      if(i===xs.length-1) dArea.push("L"+X+" "+py(0).toFixed(1)+"Z");
     }
+    if(s.area) o.push('<path d="'+dArea.join("")+'" fill="'+s.color+'" opacity=".16"/>');
+    o.push('<path d="'+dLine.join("")+'" fill="none" stroke="'+s.color+
+      '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>');
+  });
+  // baseline
+  o.push('<line x1="'+P.l+'" y1="'+py(0)+'" x2="'+(W-P.r)+'" y2="'+py(0)+'" stroke="var(--axis)" stroke-width="1"/>');
+  // crosshair
+  o.push('<line id="'+host.id+'-ch" x1="0" y1="'+P.t+'" x2="0" y2="'+py(0)+
+    '" stroke="var(--axis)" stroke-width="1" opacity="0"/>');
+  series.forEach(function(s,i){
+    o.push('<circle id="'+host.id+'-d'+i+'" r="4.5" fill="'+s.color+
+      '" stroke="var(--surface)" stroke-width="2" opacity="0"/>');
+  });
+  o.push('</svg><div class="tip" id="'+host.id+'-tip"></div>');
+  host.innerHTML = o.join("");
 
-    var tiles =
-      '<div class="grid">'
-     + '<div class="stat"><div class="lbl">ผลิตวันนี้</div><div class="val">'+r1(d.prod)+'<span> kWh</span></div></div>'
-     + '<div class="stat"><div class="lbl">ชาร์จแบต</div><div class="val">'+r1(d.charge)+'<span> kWh</span></div></div>'
-     + '<div class="stat"><div class="lbl">พึ่งตัวเอง</div><div class="val" style="color:var(--green)">'+(selfSuff===null?'—':selfSuff)+'<span>%</span></div></div>'
-     + '<div class="stat"><div class="lbl">ขายคืน</div><div class="val">'+r1(d.feedin)+'<span> kWh</span></div></div>'
-     +'</div>';
-
-    c.innerHTML =
-       '<div class="big" style="color:'+col+'">'+(soc!==null?soc:'—')+'<small>%</small></div>'
-      +'<div class="pill" style="background:'+col+'22; color:'+col+'">'+state+(batt!==null?' · '+Math.abs(Math.round(batt))+' W':'')+'</div>'
-      +'<div class="bar"><div style="width:'+(soc!==null?soc:0)+'%; background:'+col+'"></div></div>'
-      +'<div class="grid" style="margin-top:14px">'
-      + '<div class="stat"><div class="lbl">Solar (now)</div><div class="val">'+(d.genW!==null?Math.round(d.genW):'—')+'<span> W</span></div></div>'
-      + '<div class="stat"><div class="lbl">Home (now)</div><div class="val">'+(d.consW!==null?Math.round(d.consW):'—')+'<span> W</span></div></div>'
-      +'</div>'
-      + donutHtml
-      + tiles;
-
-    document.getElementById('foot').textContent='updated '+new Date().toLocaleTimeString()+' · tap to refresh';
+  var tip = document.getElementById(host.id+"-tip"), ch = document.getElementById(host.id+"-ch");
+  function move(ev){
+    var r = host.getBoundingClientRect();
+    var mx = (ev.touches?ev.touches[0].clientX:ev.clientX) - r.left;
+    var xv = xMin + (mx-P.l)/((W-P.l-P.r)||1)*(xMax-xMin);
+    var bi=0, bd=Infinity;
+    for(var i=0;i<xs.length;i++){ var dd=Math.abs(xs[i]-xv); if(dd<bd){bd=dd;bi=i;} }
+    var X = px(xs[bi]);
+    ch.setAttribute("x1",X); ch.setAttribute("x2",X); ch.setAttribute("opacity","1");
+    var html = '<b>'+cfg.xLabel(xs[bi])+'</b>';
+    series.forEach(function(s,i){
+      var v=s.vals[bi], dot=document.getElementById(host.id+"-d"+i);
+      if(v===null||v===undefined){ dot.setAttribute("opacity","0"); return; }
+      dot.setAttribute("cx",X); dot.setAttribute("cy",py(v)); dot.setAttribute("opacity","1");
+      html += '<br><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:'+
+        s.color+';margin-right:5px"></i>'+s.name+' <b>'+(cfg.vFmt?cfg.vFmt(v):f(v))+'</b>';
+    });
+    tip.innerHTML = html; tip.classList.add("on");
+    var tw = tip.offsetWidth;
+    tip.style.left = Math.max(2, Math.min(W-tw-2, X-tw/2))+"px";
+    tip.style.top  = "0px";
   }
-  function showErr(e){ render({ok:false,err:String(e)}); }
+  function out(){ tip.classList.remove("on"); ch.setAttribute("opacity","0");
+    series.forEach(function(s,i){ document.getElementById(host.id+"-d"+i).setAttribute("opacity","0"); }); }
+  host.addEventListener("pointermove", move);
+  host.addEventListener("pointerleave", out);
+  host.addEventListener("touchmove", function(e){ move(e); }, {passive:true});
+  host.addEventListener("touchend", out);
+}
 
-  function load(){
-    document.getElementById('foot').textContent='loading…';
-    fetch(API+'?f=json')
+/* --- 3b) bar / stacked bar รายวัน --- */
+function bars(host, cfg){
+  var W = host.clientWidth, H = cfg.h||140, P={t:12,r:6,b:18,l:30};
+  var lab = cfg.labels, ser = cfg.series;
+  if(!lab.length){ host.innerHTML='<div class="empty">'+(cfg.empty||"ยังไม่มีข้อมูล")+'</div>'; return; }
+  var totals = lab.map(function(_,i){
+    return cfg.stacked ? ser.reduce(function(a,s){ return a+(s.vals[i]||0); },0)
+                       : Math.max.apply(null, ser.map(function(s){ return s.vals[i]||0; }));
+  });
+  var yMax = niceMax(Math.max.apply(null, totals));
+  var bw = (W-P.l-P.r)/lab.length;
+  var innerW = Math.max(2, Math.min(cfg.maxBar||26, bw-2));
+  var py = function(y){ return P.t + (1-(y/(yMax||1)))*(H-P.t-P.b); };
+  var o = mkSvg(W,H);
+  [0, yMax/2, yMax].forEach(function(v){
+    o.push('<line x1="'+P.l+'" y1="'+py(v)+'" x2="'+(W-P.r)+'" y2="'+py(v)+'" stroke="var(--line)"/>');
+    o.push('<text x="'+(P.l-5)+'" y="'+(py(v)+3.5)+'" text-anchor="end" font-size="9.5" fill="var(--muted)">'+
+      f(v, yMax<10?1:0)+'</text>');
+  });
+  if(cfg.refLine!==undefined && cfg.refLine!==null){
+    o.push('<line x1="'+P.l+'" y1="'+py(cfg.refLine)+'" x2="'+(W-P.r)+'" y2="'+py(cfg.refLine)+
+      '" stroke="var(--ink-2)" stroke-width="1" stroke-dasharray="3 3" opacity=".65"/>');
+    o.push('<text x="'+(W-P.r)+'" y="'+(py(cfg.refLine)-4)+'" text-anchor="end" font-size="9.5" fill="var(--ink-2)">'+
+      esc(cfg.refLabel||"")+'</text>');
+  }
+  var grouped = !cfg.stacked && ser.length>1;          // หลาย series หน่วยเดียวกัน -> วางข้างกัน
+  lab.forEach(function(L,i){
+    var x0 = P.l + bw*i + (bw-innerW)/2, acc = 0;
+    var partial = cfg.partialIdx===i;
+    var gw = grouped ? Math.max(1.5, (innerW-2*(ser.length-1))/ser.length) : innerW;
+    ser.forEach(function(s, si){
+      var v = s.vals[i]; if(v===null||v===undefined||v<=0) return;
+      var x = grouped ? x0 + si*(gw+2) : x0;
+      var y0 = py(acc), y1 = py(acc+v), h = Math.max(1, y0-y1-(cfg.stacked?2:0));
+      o.push('<rect x="'+x.toFixed(1)+'" y="'+y1.toFixed(1)+'" width="'+gw.toFixed(1)+
+        '" height="'+h.toFixed(1)+'" rx="2.5" fill="'+s.color+'"'+
+        (partial?' opacity=".55" stroke="'+s.color+'" stroke-width="1" stroke-dasharray="2 2"':'')+'/>');
+      if(cfg.stacked) acc += v;
+    });
+    o.push('<rect class="hit" data-i="'+i+'" x="'+(P.l+bw*i)+'" y="'+P.t+'" width="'+bw+
+      '" height="'+(H-P.t-P.b)+'" fill="transparent"/>');
+  });
+  var step = Math.ceil(lab.length/6);
+  lab.forEach(function(L,i){
+    if(i%step) return;
+    o.push('<text x="'+(P.l+bw*i+bw/2)+'" y="'+(H-4)+'" text-anchor="middle" font-size="9.5" fill="var(--muted)">'+
+      esc(L)+'</text>');
+  });
+  o.push('<line x1="'+P.l+'" y1="'+py(0)+'" x2="'+(W-P.r)+'" y2="'+py(0)+'" stroke="var(--axis)"/>');
+  o.push('</svg><div class="tip" id="'+host.id+'-tip"></div>');
+  host.innerHTML = o.join("");
+  var tip = document.getElementById(host.id+"-tip");
+  host.addEventListener("pointermove", function(ev){
+    var t = ev.target.closest ? ev.target.closest(".hit") : null;
+    if(!t){ tip.classList.remove("on"); return; }
+    var i = +t.getAttribute("data-i");
+    var html = '<b>'+esc(cfg.tipLabel?cfg.tipLabel(i):lab[i])+'</b>';
+    ser.forEach(function(s){
+      var v=s.vals[i]; if(v===null||v===undefined) return;
+      html += '<br><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:'+
+        s.color+';margin-right:5px"></i>'+s.name+' <b>'+f(v,1)+(cfg.unit||"")+'</b>';
+    });
+    if(cfg.partialIdx===i) html += '<br><span style="color:var(--muted)">⧗ วันนี้ยังไม่จบ</span>';
+    tip.innerHTML = html; tip.classList.add("on");
+    var X = P.l + bw*i + bw/2, tw = tip.offsetWidth;
+    tip.style.left = Math.max(2, Math.min(W-tw-2, X-tw/2))+"px"; tip.style.top="0px";
+  });
+  host.addEventListener("pointerleave", function(){ tip.classList.remove("on"); });
+}
+function niceMax(v){
+  if(!v||v<=0) return 1;
+  var mag = Math.pow(10, Math.floor(Math.log10(v))), n = v/mag;
+  var step = n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10;
+  return step*mag;
+}
+
+/* --- 3c) SOC ring --- */
+function ring(soc){
+  var R=48, C=2*Math.PI*R, pct=(soc===null?0:Math.max(0,Math.min(100,soc)));
+  var col = socColor(soc);
+  return '<div class="ring"><svg viewBox="0 0 108 108" width="108" height="108">'+
+    '<circle cx="54" cy="54" r="'+R+'" fill="none" stroke="var(--line)" stroke-width="9"/>'+
+    '<circle cx="54" cy="54" r="'+R+'" fill="none" stroke="'+col+'" stroke-width="9" stroke-linecap="round"'+
+    ' stroke-dasharray="'+(C*pct/100).toFixed(1)+' '+C.toFixed(1)+'" transform="rotate(-90 54 54)"/>'+
+    '</svg><div class="val"><b style="color:'+col+'">'+(soc===null?"—":f(soc))+
+    '<span style="font-size:15px">%</span></b><span>แบตเตอรี่</span></div></div>';
+}
+
+/* --- 3d) power flow — ผังไฟวิ่ง แดด/แบต/บ้าน/กริด ---
+   🔴 ทิศทางไม่ได้ตายตัว ต้องอ่านจากเครื่องหมายของค่าจริงทุกครั้ง:
+     batt < 0 = ชาร์จเข้าแบต (ไฟไหลจากฮับไปแบต) · batt > 0 = แบตจ่ายออก
+     grid > 0 = ซื้อจากกริด (ไหลเข้าบ้าน)        · grid < 0 = ไหลออกกริด
+   ต่ำกว่า 20 W ถือว่านิ่ง — ไม่วิ่ง เพราะ sensor แกว่งระดับนั้นเป็นปกติ */
+var PF_R = 26, PF_HUB_R = 21;
+var PF_POS = { sun:[62,42], grid:[238,42], batt:[62,206], home:[238,206], hub:[150,124] };
+
+function pfEdge(a, b, col, watt){
+  var dx=b[0]-a[0], dy=b[1]-a[1], L=Math.sqrt(dx*dx+dy*dy);
+  if(!L) return '';
+  var ux=dx/L, uy=dy/L, ra=(a===PF_POS.hub?PF_HUB_R:PF_R)+4, rb=(b===PF_POS.hub?PF_HUB_R:PF_R)+4;
+  var d = 'M'+(a[0]+ux*ra).toFixed(1)+' '+(a[1]+uy*ra).toFixed(1)
+        + 'L'+(b[0]-ux*rb).toFixed(1)+' '+(b[1]-uy*rb).toFixed(1);
+  var s = '<path class="pf-line" d="'+d+'" stroke="'+col+'"/>';
+  if(watt!==null && watt!==undefined && !isNaN(watt) && Math.abs(watt)>=20){
+    // 3000 W -> ~0.55s (เร็ว) · 100 W -> ~2.9s (ช้า) — เห็นความต่างของกำลังไฟได้จากจังหวะ
+    var sp = Math.max(0.55, Math.min(3.0, 3.0 - Math.abs(watt)/1150));
+    s += '<path class="pf-dash" d="'+d+'" stroke="'+col+'" style="--sp:'+sp.toFixed(2)+'s"/>';
+  }
+  return s;
+}
+
+function pfNode(p, icon, label, val, col, on){
+  return '<g class="'+(on?'':'pf-off')+'">'
+    + '<circle class="pf-node" cx="'+p[0]+'" cy="'+p[1]+'" r="'+PF_R+'"/>'
+    + '<g transform="translate('+(p[0]-16)+','+(p[1]-16)+')">'+icon+'</g>'
+    + '<text class="pf-lab" x="'+p[0]+'" y="'+(p[1]+41)+'" text-anchor="middle">'+label+'</text>'
+    + '<text class="pf-val" x="'+p[0]+'" y="'+(p[1]+57)+'" text-anchor="middle" fill="'+col+'">'
+    +   val+'<tspan class="pf-u"> W</tspan></text></g>';
+}
+
+function pfIconSun(c){
+  var r='';
+  for(var i=0;i<8;i++){
+    var a=i*Math.PI/4;
+    r += '<line x1="'+(16+Math.cos(a)*10.5).toFixed(1)+'" y1="'+(16+Math.sin(a)*10.5).toFixed(1)
+       + '" x2="'+(16+Math.cos(a)*14.5).toFixed(1)+'" y2="'+(16+Math.sin(a)*14.5).toFixed(1)+'"/>';
+  }
+  return '<g class="pf-rays" stroke="'+c+'" stroke-width="2" stroke-linecap="round">'+r+'</g>'
+       + '<circle cx="16" cy="16" r="6.4" fill="'+c+'"/>';
+}
+function pfIconBatt(c, soc){
+  var h = soc===null ? 0 : Math.max(0, Math.min(1, soc/100)) * 13.4;
+  return '<rect x="11.5" y="6" width="9" height="3.2" rx="1.4" fill="'+c+'"/>'
+       + '<rect x="8" y="9.2" width="16" height="18.4" rx="3.4" fill="none" stroke="'+c+'" stroke-width="2"/>'
+       + (h>0 ? '<rect x="10.5" y="'+(25.1-h).toFixed(1)+'" width="11" height="'+h.toFixed(1)+'" rx="1.6" fill="'+c+'"/>' : '');
+}
+function pfIconHome(c){
+  return '<g fill="none" stroke="'+c+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">'
+       + '<path d="M5 16.5 L16 7 L27 16.5"/><path d="M8.5 15.2 V26 H23.5 V15.2"/>'
+       + '<path d="M13.6 26 V20.2 H18.4 V26"/></g>';
+}
+function pfIconGrid(c){
+  return '<g fill="none" stroke="'+c+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">'
+       + '<path d="M9 27 L14 8 M23 27 L18 8 M14 8 H18"/>'
+       + '<path d="M12.4 14 H19.6 M10.9 20 H21.1 M12.4 14 L19.6 20 M19.6 14 L12.4 20"/></g>';
+}
+function pfIconHub(c){
+  return '<path d="M17.8 7 L10 17.6 H15.2 L14.2 25 L22 14.4 H16.8 Z" fill="'+c+'"/>';
+}
+
+function pflow(pv, load, batt, grid, soc){
+  var P=PF_POS, gridOut = (grid!==null && grid<0);
+  var cSun='var(--solar)', cBatt='var(--batt)', cHome='var(--home)',
+      cGrid = gridOut ? 'var(--export)' : 'var(--grid)';
+  var on = function(v){ return v!==null && v!==undefined && !isNaN(v) && Math.abs(v)>=20; };
+
+  var e = pfEdge(P.sun, P.hub, cSun, pv)                       // แดดเข้าเสมอ
+        + pfEdge(P.hub, P.home, cHome, load)                   // บ้านออกเสมอ
+        + (batt!==null && batt<0 ? pfEdge(P.hub, P.batt, cBatt, batt)    // ชาร์จ
+                                 : pfEdge(P.batt, P.hub, cBatt, batt))   // จ่ายออก
+        + (gridOut ? pfEdge(P.hub, P.grid, cGrid, grid)                  // ไหลออกกริด
+                   : pfEdge(P.grid, P.hub, cGrid, grid));                // ซื้อจากกริด
+
+  return '<div class="pflow"><svg viewBox="0 0 300 272" role="img" aria-label="ผังทิศทางไฟตอนนี้">'
+    + e
+    + '<circle class="pf-node" cx="'+P.hub[0]+'" cy="'+P.hub[1]+'" r="'+PF_HUB_R+'"/>'
+    + '<g transform="translate('+(P.hub[0]-16)+','+(P.hub[1]-16)+')">'+pfIconHub('var(--ink-2)')+'</g>'
+    + pfNode(P.sun,  pfIconSun(cSun),        'แดด', fw(pv), cSun, on(pv))
+    + pfNode(P.grid, pfIconGrid(cGrid),
+        (grid===null?'กริด':(gridOut?'ไหลออกกริด':'ซื้อจากกริด')),
+        (grid===null?'—':fw(Math.abs(grid))), cGrid, on(grid))
+    + pfNode(P.batt, pfIconBatt(cBatt, soc),
+        (batt!==null&&batt<0?'ชาร์จเข้าแบต':'จากแบต'),
+        (batt===null?'—':fw(Math.abs(batt))), cBatt, on(batt))
+    + pfNode(P.home, pfIconHome(cHome),      'บ้าน', fw(load), cHome, on(load))
+    + '</svg></div>';
+}
+
+/* ===================================================================
+   4) views
+   =================================================================== */
+/* tone = ความหมายของตัวเลข ไม่ใช่ตำแหน่ง: good(เขียว) · gen(เหลือง) · self(น้ำเงิน) · cost(แดง)
+   ไม่ส่ง tone = การ์ดสีกลาง ใช้กับตัวเลขที่ไม่ใช่เรื่องพลังงาน (ขนาดคลัง · วันที่ขาด) */
+function tile(l, v, u, s, tone){
+  return '<div class="tile'+(tone?' t t-'+tone:'')+'"><div class="l">'+l+'</div><div class="v">'+v+
+    (u?'<u>'+u+'</u>':'')+'</div>'+(s?'<div class="s">'+s+'</div>':'')+'</div>';
+}
+
+/* ---------- 4a) ตอนนี้ ---------- */
+function viewNow(d){
+  var w = d.now||{}, st = d._stat, t = d._today;
+  var soc=w.soc, batt=w.batt, pv=w.pv, load=w.load, grid=w.grid;
+  var state = batt===null ? "—" : (batt<-20?"กำลังชาร์จ":(batt>20?"กำลังจ่ายไฟ":"นิ่ง"));
+  var col = socColor(soc);
+
+  // เวลาที่แบตอยู่ได้ — ต้องรู้ความจุแบตก่อน ไม่รู้ = ไม่เดา
+  var runtime = "";
+  if(S.cap>0 && batt!==null && batt>20 && soc!==null){
+    var usable = (soc-20)/100*S.cap;                  // กันไว้ 20% ตามอายุแบต
+    var hrs = usable/(batt/1000);
+    runtime = tile("แบตอยู่ได้อีก", f(Math.floor(hrs))+":"+("0"+Math.round((hrs%1)*60)).slice(-2), "ชม.", "ที่โหลดตอนนี้ · เหลือถึง 20%", "good");
+  } else if(S.cap>0 && batt!==null && batt<-20 && soc!==null){
+    var need=(100-soc)/100*S.cap, h2=need/(-batt/1000);
+    runtime = tile("เต็มในอีก", f(Math.floor(h2))+":"+("0"+Math.round((h2%1)*60)).slice(-2), "ชม.", "ที่อัตราชาร์จตอนนี้", "good");
+  }
+
+  // ป้าย/ทิศของกริดย้ายไปอยู่ใน pflow() แล้ว — อ่านจากเครื่องหมายของ grid ที่เดียว ไม่ให้แตกเป็น 2 ที่
+
+  return ''
+  + '<div class="card">'
+  +   '<div class="hero">'+ring(soc)
+  +     '<div style="min-width:0">'
+  +       '<span class="pill" style="background:color-mix(in srgb,'+col+' 16%,transparent);color:'+col+'">'
+  +         state+(batt!==null?' · '+fw(Math.abs(batt))+' W':'')+'</span>'
+  +       '<div class="meta">'
+  +         'สูงสุดวันนี้ <b>'+f(st.socMax)+'%</b> · ต่ำสุด <b>'+f(st.socMin)+'%</b>'
+  +       '</div>'
+  +     '</div>'
+  +   '</div>'
+  + '</div>'
+
+  + '<div class="card">'
+  +   '<h2>ไฟกำลังวิ่งไปไหน<span class="badge">ตอนนี้</span></h2>'
+  +   '<p class="why">ค่ากริดคำนวณจากสมดุล <b>แดด + แบต + กริด = บ้าน</b> (ไม่ได้อ่านจาก sensor กริดตรง ๆ)</p>'
+  +   pflow(pv, load, batt, grid, soc)
+  + '</div>'
+
+  + '<div class="card">'
+  +   '<h2>วันนี้ถึงตอนนี้</h2>'
+  +   '<div class="tiles">'
+  +     (st.hasGrid
+      ? tile("ไม่ซื้อไฟจากกริดเลย", f(st.gridFreeMin/60,1), "ชม.", "วัดจากมิเตอร์ราย 5 นาที (<50 W)", "good")
+      : tile("แดดคลุมบ้านได้เอง", f(st.coverMin/60,1), "ชม.", "ช่วงที่ผลิต ≥ ที่ใช้", "good"))
+  +     tile("ผลิตสูงสุด", fw(st.peak), "W", st.peakAt===null?"—":"เวลา "+hhmm(st.peakAt), "gen")
+  +     tile("ผลิตแล้ว", f(t?t.gen:null,1), "kWh", null, "self")
+  +     tile("ซื้อไฟแล้ว", f(t?t.imp:null,1), "kWh", t?("≈ ฿"+f(t.imp*S.rate,0)):null, "cost")
+  +   (runtime||"")
+  +   '</div>'
+  +   (S.cap>0?"":'<p class="note">ใส่ความจุแบต (kWh) ที่ ⚙ แล้วจะคำนวณ "แบตอยู่ได้อีกกี่ชั่วโมง" ให้</p>')
+  + '</div>';
+}
+
+/* ---------- 4b) วันนี้ ---------- */
+function viewDay(d){
+  var t = d._today, st = d._stat;
+  var partial = st.lastT!==null ? "ข้อมูลถึง "+hhmm(st.lastT) : "";
+  var h = ''
+  + '<div class="card">'
+  +   '<h2>กำลังไฟตลอดวัน<span class="badge">'+esc(partial)+'</span></h2>'
+  +   '<p class="why">เส้นที่ <b>แดดอยู่เหนือบ้าน</b> คือช่วงที่ไม่ต้องแตะไฟกริด ส่วนที่แดดต่ำกว่า คือช่วงที่แบตหรือกริดต้องเข้ามาช่วย</p>'
+  +   '<div class="chart" id="cPow"></div>'
+  +   '<div class="legend"><span><i style="background:var(--solar)"></i>แดดผลิต</span>'
+  +     '<span><i style="background:var(--home)"></i>บ้านใช้</span></div>'
+  + '</div>'
+  + '<div class="card">'
+  +   '<h2>ระดับแบตตลอดวัน</h2>'
+  +   '<p class="why">แยก panel เพราะหน่วยคนละอย่าง (% กับ W) — เอามารวมแกนเดียวกันเมื่อไหร่ กราฟจะโกหกทันที</p>'
+  +   '<div class="chart" id="cSoc"></div>'
+  + '</div>';
+
+  if(!t){
+    return h + '<div class="card"><div class="empty">ยังไม่มีสรุปรายวันของวันนี้จาก Deye<br>(ตัวเลขรายวันจะขึ้นหลังมีข้อมูลสะสมพอ)</div></div>';
+  }
+  var self=t.self, dis=t.dis||0, imp=t.imp||0, chg=t.chg||0, exp=t.exp||0, gen=t.gen||0, use=t.use||0;
+  var loss = t.loss;
+  var lossPct = gen>0 ? Math.abs(loss)/gen*100 : 0;
+  var ok = lossPct<=8;
+
+  h += '<div class="card">'
+  +  '<h2>วันนี้ไฟมาจากไหน ไปไหน</h2>'
+  +  '<p class="why">แถวบน = ของที่ผลิตได้ถูกใช้ไปทางไหน · แถวล่าง = ไฟที่บ้านใช้มาจากไหน</p>'
+  +  '<div class="bal">'
+  +    balRow("ผลิตได้", gen, [
+         {n:"ใช้ตรง", v:self, c:"var(--solar)"},
+         {n:"เข้าแบต", v:chg, c:"var(--batt)"},
+         {n:"ออกกริด", v:exp, c:"var(--export)"},
+         {n:"ส่วนต่าง", v:Math.max(0,loss), c:"var(--line)", dim:true}])
+  +    balRow("บ้านใช้", use, [
+         {n:"แดด", v:self, c:"var(--solar)"},
+         {n:"แบต", v:dis, c:"var(--batt)"},
+         {n:"กริด", v:imp, c:"var(--grid)"}])
+  +  '</div>'
+  +  '<div class="recon"><span class="st" style="color:'+(ok?"var(--good)":"var(--warn)")+'">'+(ok?"✓":"⚠")+'</span>'
+  +    '<span>ผลิต '+f(gen,1)+' = ใช้ตรง '+f(self,1)+' + เข้าแบต '+f(chg,1)+' + ออกกริด '+f(exp,1)
+  +    ' <b>+ ส่วนต่าง '+f(loss,1)+' kWh ('+f(lossPct,0)+'%)</b>'
+  +    (ok?" — อยู่ในช่วงปกติของการแปลงไฟ":" — สูงผิดปกติ ควรเช็คว่า field ไหนนับซ้ำ/ขาด")+'</span></div>'
+  +  '<div class="tiles c3" style="margin-top:10px">'
+  +    tile("พึ่งตัวเอง", t.ss===null?"—":f(t.ss,0), "%", "(ใช้-ซื้อ)÷ใช้", "self")
+  +    tile("ประหยัดได้", "฿"+f(t.saved,0), "", "แดด+แบต × ฿"+S.rate, "good")
+  +    tile("ค่าไฟที่จ่าย", "฿"+f(t.cost,0), "", f(imp,1)+" kWh", "cost")
+  +  '</div>'
+  +  (chg>0?'<p class="note">วนแบตวันนี้: เข้า '+f(chg,1)+' kWh ออก '+f(dis,1)+' kWh ('+
+      f(dis/chg*100,0)+'% round-trip)</p>':'')
+  + '</div>';
+  return h;
+}
+function balRow(title, total, segs){
+  var sum = segs.reduce(function(a,s){ return a+(s.v||0); },0) || 1;
+  var h = '<div class="row"><div class="cap"><span>'+title+'</span><b>'+f(total,1)+' kWh</b></div><div class="track">';
+  segs.forEach(function(s){
+    if(!s.v || s.v<=0) return;
+    var pct = s.v/sum*100;
+    var label = pct>=17 ? s.n+' '+f(s.v,1) : (pct>=9 ? f(s.v,1) : '');
+    h += '<div class="seg'+(s.dim?' dim':'')+'" style="background:'+s.c+';width:'+pct.toFixed(2)+'%" '+
+         'title="'+esc(s.n)+' '+f(s.v,1)+' kWh">'+label+'</div>';
+  });
+  h += '</div></div>';
+  return h;
+}
+
+/* ---------- 4c) รอบบิล ---------- */
+function viewCycle(d){
+  var c = d._cyc, p = d._prev;
+  if(!c || !c.rows.length){
+    return '<div class="card"><div class="empty">ยังไม่มีข้อมูลในรอบบิลนี้<br>รอบ '+
+      esc((d.cycle||{}).start||"?")+' → '+esc((d.cycle||{}).end||"?")+'</div></div>';
+  }
+  var elapsed = c.doneDays, remain = c.totalDays - c.rows.length;
+  var pctTime = Math.round(c.rows.length/c.totalDays*100);
+  // เทียบรอบก่อน ณ จำนวนวันเท่ากัน — ไม่ใช่เทียบยอดเต็มรอบกับรอบที่ยังไม่จบ
+  var pSame = p ? p.rows.slice(0, c.rows.length).reduce(function(a,b){ return a+(b.imp||0); },0) : null;
+  var diff  = pSame===null ? null : c.imp - pSame;
+
+  var h = ''
+  + '<div class="card">'
+  +   '<h2>รอบบิล '+esc(dLabel(c.start))+' → '+esc(dLabel(c.end))+
+        '<span class="badge">วันที่ '+c.rows.length+'/'+c.totalDays+'</span></h2>'
+  +   '<p class="why">รอบบิล PEA 17 → 16 · ตัวเลขนี้คือ <b>หน่วยที่ซื้อจากกริด</b> ซึ่งเป็นตัวที่ขึ้นบิลจริง</p>'
+  +   '<div class="tiles">'
+  +     tile("ซื้อแล้วในรอบนี้", f(c.imp,1), "kWh", "เฉลี่ย "+f(c.avgImp,1)+" kWh/วัน", "cost")
+  +     tile("ค่าไฟสะสม", "฿"+f(c.cost,0), "", "ที่ ฿"+S.rate+"/kWh", "cost")
+  +     tile("ประมาณการทั้งรอบ", c.projImp===null?"—":f(c.projImp,0), "kWh", "🔴 คาดจากค่าเฉลี่ย "+elapsed+" วันที่จบแล้ว", "cost")
+  +     tile("ค่าไฟคาดทั้งรอบ", c.projCost===null?"—":"฿"+f(c.projCost,0), "", "เหลืออีก "+remain+" วัน", "cost")
+  +   '</div>'
+  +   '<div class="recon"><span class="st">i</span><span>ประมาณการใช้วิธีเส้นตรง: เฉลี่ยต่อวัน × '+c.totalDays+
+        ' วัน · <b>ไม่รวมวันนี้</b> (ยังไม่จบวัน) และไม่ได้ปรับตามฤดู/วันหยุด</span></div>'
+  + '</div>'
+
+  + '<div class="card">'
+  +   '<h2>เทียบรอบที่แล้ว ณ วันเดียวกัน'+(diff===null?'':'<span class="badge" style="color:'+
+        (diff<=0?"var(--good)":"var(--crit)")+'">'+(diff<=0?"▼":"▲")+' '+f(Math.abs(diff),1)+' kWh</span>')+'</h2>'
+  +   (pSame===null
+      ? '<div class="empty">ยังไม่มีข้อมูลรอบก่อนพอให้เทียบ</div>'
+      : '<div class="tiles"><div class="tile"><div class="l">รอบนี้ '+c.rows.length+' วันแรก</div>'
+        + '<div class="v" style="color:var(--grid)">'+f(c.imp,1)+'<u> kWh</u></div>'
+        + '<div class="s">฿'+f(c.imp*S.rate,0)+'</div></div>'
+        + '<div class="tile"><div class="l">รอบก่อน '+c.rows.length+' วันแรก</div>'
+        + '<div class="v" style="color:var(--muted)">'+f(pSame,1)+'<u> kWh</u></div>'
+        + '<div class="s">฿'+f(pSame*S.rate,0)+'</div></div></div>')
+  + '</div>'
+
+  + '<div class="card">'
+  +   '<h2>ซื้อไฟรายวันในรอบนี้</h2>'
+  +   '<p class="why">แท่งประคือวันนี้ ยังไม่จบวัน จึงไม่ถูกเอาไปหารค่าเฉลี่ย</p>'
+  +   '<div class="chart" id="cCyc"></div>'
+  +   '<div class="legend"><span><i style="background:var(--grid)"></i>ซื้อจากกริด (kWh)</span>'
+  +     '<span style="color:var(--muted)">- - เฉลี่ยต่อวัน</span></div>'
+  + '</div>'
+
+  + '<div class="card">'
+  +   '<h2>ย้อนหลังทุกรอบบิล<span class="badge" id="cycN"></span></h2>'
+  +   '<p class="why">ตัวที่ใช้ตัดสินว่าระบบคุ้มขึ้นจริงไหม คือแท่งแดง (หน่วยที่ยังต้องซื้อ) ไม่ใช่แท่งผลิต</p>'
+  +   '<div class="chart" id="cCycAll"></div>'
+  +   '<div class="legend"><span><i style="background:var(--grid)"></i>ซื้อจากกริด (kWh/รอบ)</span>'
+  +     '<span style="color:var(--muted)">แท่งประ = รอบที่ยังไม่จบ</span></div>'
+  + '</div>'
+
+  + '<div class="card">'
+  +   '<h2>รอบนี้ประหยัดไปเท่าไหร่</h2>'
+  +   '<div class="tiles c3">'
+  +     tile("แดดใช้ตรง", f(c.self,1), "kWh", null, "gen")
+  +     tile("ผ่านแบต", f(c.dis,1), "kWh", null, "good")
+  +     tile("มูลค่า", "฿"+f(c.saved,0), "", "ถ้าซื้อไฟทั้งหมด", "good")
+  +   '</div>'
+  +   '<p class="note">🔴 "ประหยัด" = หน่วยที่ไม่ต้องซื้อ × ฿'+S.rate+
+       ' — ยังไม่หักค่า Ft / ค่าบริการ / ขั้นบันไดอัตราก้าวหน้า ซึ่งบิลจริงมี</p>'
+  + '</div>';
+  return h;
+}
+
+/* ---------- 4d) ประวัติ (ทั้งคลัง) ---------- */
+var RANGES = [{k:"30",l:"30 วัน"},{k:"90",l:"90 วัน"},{k:"month",l:"รายเดือน"},{k:"cycle",l:"รายรอบบิล"}];
+function rangeBar(){
+  return '<div class="seg-ctl">'+RANGES.map(function(r){
+    return '<button data-range="'+r.k+'"'+(S.range===r.k?' class="on"':'')+'>'+r.l+'</button>';
+  }).join("")+'</div>';
+}
+function viewHist(d){
+  var all = d._days;
+  if(!all.length) return '<div class="card"><div class="empty">ยังไม่มีข้อมูลรายวันในคลัง<br>'+
+    'กด ⚙ → "ดึงย้อนหลังทั้งหมด" หรือเปิด <code>?f=diag</code> ดูว่า history ติดไหม</div></div>';
+
+  var sd = (d.cycle||{}).startDay || 17;
+  var B  = groupRows(all, S.range, d.today, sd);
+  var daily = (S.range==="30"||S.range==="90");
+  var done = B.filter(function(b){ return !b.partial; });
+  var sum = function(k){ return done.reduce(function(a,b){ return a+(b[k]||0); },0); };
+  var unit = daily?"วัน":(S.range==="month"?"เดือน":"รอบ");
+  var avgGen = done.length ? sum("gen")/done.length : null;
+  var best = done.reduce(function(a,b){ return (!a||(b.gen||0)>(a.gen||0))?b:a; }, null);
+  var totUse = sum("use"), totImp = sum("imp");
+  var ssAll = totUse>0 ? (totUse-totImp)/totUse*100 : null;     // ของทั้งงวด ไม่ใช่เฉลี่ยของเปอร์เซ็นต์
+
+  // สถิติทั้งคลัง (ไม่ขึ้นกับช่วงที่เลือก)
+  var allDone = all.filter(function(x){ return x.date!==d.today; });
+  var allGen = allDone.reduce(function(a,b){ return a+(b.gen||0); },0);
+  var allImp = allDone.reduce(function(a,b){ return a+(b.imp||0); },0);
+  var allSelf= allDone.reduce(function(a,b){ return a+(b.self||0)+(b.dis||0); },0);
+
+  var h = ''
+  + '<div class="card">'
+  +   '<h2>คลังข้อมูล<span class="badge">'+storeCount()+' วัน</span></h2>'
+  +   '<p class="why">เก็บอยู่ในเครื่องนี้ ตั้งแต่ <b>'+esc(dLabel(storeMin()||"—"))+'</b> ถึง <b>'
+  +     esc(dLabel(storeMax()||"—"))+'</b> · เปิดครั้งหน้าจะขอ server แค่วันที่ยังไม่มี</p>'
+  +   '<div class="tiles c3">'
+  +     tile("ผลิตสะสม", f(allGen,0), "kWh", null, "self")
+  +     tile("ซื้อสะสม", f(allImp,0), "kWh", "฿"+f(allImp*S.rate,0), "cost")
+  +     tile("ประหยัดสะสม", "฿"+f(allSelf*S.rate,0), "", f(allSelf,0)+" kWh", "good")
+  +   '</div>'
+  + '</div>'
+
+  + '<div class="card">'
+  +   '<h2>ช่วงที่ดู</h2>'
+  +   rangeBar()
+  +   '<div class="tiles" style="margin-top:11px">'
+  +     tile("ผลิตรวม", f(sum("gen"),0), "kWh", "เฉลี่ย "+f(avgGen,1)+" /"+unit, "self")
+  +     tile("ซื้อรวม", f(totImp,0), "kWh", "฿"+f(totImp*S.rate,0), "cost")
+  +     tile((daily?"วัน":unit)+"ที่ดีที่สุด", best?f(best.gen,best.gen<100?1:0):"—", "kWh",
+              best?(daily?dLabel(best.key):best.label):null, "gen")
+  +     tile("พึ่งตัวเองทั้งงวด", ssAll===null?"—":f(ssAll,0), "%", "(ใช้-ซื้อ)÷ใช้ ของทั้งช่วง", "self")
+  +   '</div>'
+  +   '<p class="note">⧗ '+(daily?"วันนี้":"งวดที่ยังไม่จบ")+' ไม่ถูกนับในค่าเฉลี่ยและยอดรวมข้างบน '
+  +     '(แท่งประในกราฟ) · "พึ่งตัวเองทั้งงวด" คำนวณจากยอดรวม ไม่ใช่เฉลี่ยของเปอร์เซ็นต์รายวัน</p>'
+  + '</div>'
+
+  + '<div class="card">'
+  +   '<h2>ผลิตได้<span class="badge">'+B.length+' '+unit+'</span></h2>'
+  +   '<div class="chart" id="cGen"></div>'
+  +   '<div class="legend"><span><i style="background:var(--solar)"></i>ผลิต (kWh)</span>'
+  +     '<span style="color:var(--muted)">- - เฉลี่ย '+f(avgGen,1)+'</span></div>'
+  + '</div>'
+
+  + '<div class="card">'
+  +   '<h2>ไฟที่บ้านใช้ มาจากไหนบ้าง</h2>'
+  +   '<p class="why">ความสูงของแท่ง = ที่ใช้ทั้งหมด — แถบแดงยิ่งบาง ยิ่งพึ่งกริดน้อย</p>'
+  +   '<div class="chart" id="cSrc"></div>'
+  +   '<div class="legend"><span><i style="background:var(--solar)"></i>แดด</span>'
+  +     '<span><i style="background:var(--batt)"></i>แบต</span>'
+  +     '<span><i style="background:var(--grid)"></i>กริด</span></div>'
+  + '</div>'
+
+  + '<div class="card">'
+  +   '<h2>ค่าไฟที่จ่ายจริง เทียบกับที่ประหยัดได้</h2>'
+  +   '<p class="why">แท่งซ้อนกันไม่ได้ เพราะคนละความหมาย — อันบนคือเงินที่ออกจากกระเป๋า อันล่างคือเงินที่ไม่ต้องจ่าย</p>'
+  +   '<div class="chart" id="cMoney"></div>'
+  +   '<div class="legend"><span><i style="background:var(--grid)"></i>จ่ายจริง (฿)</span>'
+  +     '<span><i style="background:var(--batt)"></i>ประหยัดได้ (฿)</span></div>'
+  +   '<p class="note">🔴 คิดที่ ฿'+S.rate+'/kWh คงที่ · ยังไม่รวม Ft · ค่าบริการ · อัตราก้าวหน้า</p>'
+  + '</div>'
+
+  + '<div class="card">'
+  +   '<h2>ข้อมูลดิบ</h2>'
+  +   '<details><summary>ตาราง '+B.length+' '+unit+' (ที่แสดงอยู่)</summary><div style="overflow-x:auto">'
+  +   '<table><thead><tr><th>'+(daily?"วัน":"งวด")+'</th><th>ผลิต</th><th>ใช้</th><th>ซื้อ</th>'
+  +     '<th>ออกกริด</th><th>พึ่งเอง</th><th>฿</th></tr></thead><tbody>'
+  +   B.slice().reverse().map(function(b){
+        return '<tr><td>'+esc(daily?dLabel(b.key):b.label)+(b.partial?' ⧗':'')+'</td><td>'+
+          f(b.gen,1)+'</td><td>'+f(b.use,1)+'</td><td>'+f(b.imp,1)+'</td><td>'+f(b.exp,1)+'</td><td>'+
+          (b.ss===null?"—":f(b.ss,0)+"%")+'</td><td>'+f(b.cost,0)+'</td></tr>'; }).join("")
+  +   '</tbody></table></div></details>'
+  +   '<details><summary>ดาวน์โหลด CSV ทั้งคลัง ('+storeCount()+' วัน)</summary>'
+  +     '<p class="note">ไฟล์ออกจากเครื่องนี้ไปไหนไม่ได้ ถ้าไม่ได้กดเอง</p>'
+  +     '<button class="iconbtn" style="width:auto;padding:0 14px;height:32px" id="btnCsv">บันทึก .csv</button>'
+  +   '</details>'
+  + '</div>';
+  return h;
+}
+
+/* ---------- 4e) ตั้งค่า ---------- */
+function viewCfg(){
+  return '<div class="card">'
+  + '<h2>ตั้งค่า</h2>'
+  + '<div class="field"><label>ค่าไฟ (฿/kWh)<br><span style="font-size:10px;color:var(--muted)">ใช้คิดเงินทุกหน้า</span></label>'
+  +   '<input id="inRate" type="number" step="0.01" value="'+S.rate+'"></div>'
+  + '<div class="field"><label>ความจุแบต (kWh)<br><span style="font-size:10px;color:var(--muted)">0 = ไม่คำนวณเวลาที่เหลือ</span></label>'
+  +   '<input id="inCap" type="number" step="0.1" value="'+S.cap+'"></div>'
+  + '<div class="field" style="display:block"><label>Apps Script URL (/exec)</label>'
+  +   '<input id="inApi" class="wide" style="margin-top:6px" value="'+esc(S.api)+'"></div>'
+  + '<div class="field" style="display:block"><label>ACCESS_KEY (ถ้าตั้งไว้ฝั่ง script)</label>'
+  +   '<input id="inKey" class="wide" style="margin-top:6px" value="'+esc(S.key)+'"></div>'
+  + '<button class="btn pri" id="btnSave">บันทึกแล้วโหลดใหม่</button>'
+  + '<p class="note">เก็บไว้ในเครื่องนี้เท่านั้น (localStorage) ไม่ได้ส่งไปไหน</p>'
+  + '</div>'
+
+  + '<div class="card">'
+  + '<h2>คลังข้อมูลในเครื่อง<span class="badge">'+storeCount()+' วัน</span></h2>'
+  + '<p class="why">ปกติเปิดแอปแล้วจะขอ server <b>เฉพาะวันที่ยังไม่มี</b> ('
+  +   (storeMax()? "ล่าสุดที่มี "+esc(dLabel(storeMax())) : "ยังไม่มีข้อมูล")+')</p>'
+  + '<div class="tiles c3">'
+  +   tile("ช่วงที่เก็บ", storeCount()?esc(dLabel(storeMin())):"—", "", storeCount()?("ถึง "+dLabel(storeMax())):null)
+  +   tile("ขนาด", f(storeBytes()/1024,0), "KB", "เพดาน ~5,000 KB")
+  +   tile("วันที่ขาด", f(missingDays()), "วัน", "ช่องว่างในช่วงที่เก็บ")
+  + '</div>'
+  + '<div style="margin-top:12px">'
+  +   '<button class="btn pri" id="btnFull">ดึงย้อนหลังทั้งหมดใหม่</button>'
+  +   '<button class="btn" id="btnSync">สั่ง server เติมวันที่ขาด</button>'
+  +   '<button class="btn" id="btnWipe">ล้างคลังในเครื่อง</button>'
+  + '</div>'
+  + '<div id="syncOut" class="note"></div>'
+  + '<p class="note">"ดึงย้อนหลังทั้งหมดใหม่" = ขอทุกวันที่ server มี แล้วทับของเดิม · '
+  +   '"สั่ง server เติม" ใช้เมื่อตั้ง SHEET_ID แล้ว (server จะไปถาม Deye เฉพาะวันที่คลังยังขาด)</p>'
+  + '</div>'
+  + '<div class="card"><h2>สถานะข้อมูล</h2><div id="diag" class="note"></div></div>';
+}
+/* นับวันที่หายไประหว่างวันแรกกับวันล่าสุดที่เก็บไว้ */
+function missingDays(){
+  var a = storeMin(), b = storeMax(); if(!a||!b) return 0;
+  var span = Math.round((new Date(b+"T12:00:00")-new Date(a+"T12:00:00"))/86400000)+1;
+  return Math.max(0, span - storeCount());
+}
+
+/* ===================================================================
+   5) render + charts
+   =================================================================== */
+function render(){
+  var v = document.getElementById("view");
+  if(S.tab==="cfg"){ v.innerHTML = viewCfg(); bindCfg(); return; }
+  if(S.err){ v.innerHTML = '<div class="card"><h2>เชื่อมต่อไม่ได้</h2><p class="err">'+esc(S.err)+
+    '</p><p class="note">เช็คที่ ⚙ ว่า URL ถูกไหม · หรือเปิด '+esc(S.api)+'?f=diag ในเบราว์เซอร์ดูตรง ๆ</p></div>'; return; }
+  if(!S.d){ v.innerHTML = '<div class="card"><div class="skel" style="width:60%"></div>'+
+    '<div class="skel" style="width:90%;margin-top:9px"></div>'+
+    '<div class="skel" style="height:110px;margin-top:14px"></div></div>'; return; }
+  var d = S.d;
+  if(S.tab==="now")  v.innerHTML = viewNow(d);
+  if(S.tab==="day"){ v.innerHTML = viewDay(d); drawDay(d); }
+  if(S.tab==="cyc"){ v.innerHTML = viewCycle(d); drawCycle(d); }
+  if(S.tab==="hist"){ v.innerHTML = viewHist(d); drawHist(d); }
+}
+var XT = [{v:0,l:"00"},{v:360,l:"06"},{v:720,l:"12"},{v:1080,l:"18"},{v:1440,l:"24"}];
+
+function drawDay(d){
+  var it = d._intra;
+  var p = chartHost("cPow");
+  if(p) timeSeries(p, { x:it.t, h:160, xMin:0, xMax:1440, xTicks:XT,
+    series:[ {name:"แดดผลิต", color:cssv("--solar"), vals:it.pv, area:true},
+             {name:"บ้านใช้",  color:cssv("--home"),  vals:it.load, area:false} ],
+    yFmt:function(v){ return v>=1000? (v/1000).toFixed(1)+"k" : f(v); },
+    vFmt:function(v){ return f(v)+" W"; },
+    xLabel:hhmm, empty:"ยังไม่มีข้อมูลราย 5 นาทีของวันนี้" });
+  var s = chartHost("cSoc");
+  if(s) timeSeries(s, { x:it.t, h:120, xMin:0, xMax:1440, xTicks:XT, yMax:100,
+    yTicks:[0,50,100],
+    series:[ {name:"แบต", color:cssv("--batt"), vals:it.soc, area:true} ],
+    yFmt:function(v){ return f(v)+"%"; }, vFmt:function(v){ return f(v,1)+"%"; },
+    xLabel:hhmm, empty:"ยังไม่มีข้อมูล SOC ของวันนี้" });
+}
+function drawCycle(d){
+  var c = d._cyc, host = chartHost("cCyc");
+  if(host && c){
+    var idx = c.rows.map(function(x){ return x.date; }).indexOf(d.today);
+    bars(host, { labels:c.rows.map(function(x){ return dLabel(x.date); }), h:150, unit:" kWh",
+      series:[{name:"ซื้อจากกริด", color:cssv("--grid"), vals:c.rows.map(function(x){ return x.imp; })}],
+      partialIdx: idx, refLine:c.avgImp, refLabel:"เฉลี่ย "+f(c.avgImp,1),
+      tipLabel:function(i){ return dLabel(c.rows[i].date); } });
+  }
+  // ทุกรอบบิลที่มีในคลัง
+  var all = chartHost("cCycAll"); if(!all) return;
+  var sd = (d.cycle||{}).startDay || 17;
+  var B = groupRows(d._days, "cycle", d.today, sd);
+  var badge = document.getElementById("cycN");
+  if(badge) badge.textContent = B.length+" รอบ";
+  if(!B.length){ all.innerHTML = '<div class="empty">ยังไม่มีข้อมูลย้อนหลัง</div>'; return; }
+  var idx2 = B.reduce(function(a,b,i){ return b.partial?i:a; }, -1);
+  var doneB = B.filter(function(b){ return !b.partial && b.nDays>=25; });   // รอบที่เก็บได้ไม่ครบ ไม่เอามาหาร
+  var avg = doneB.length ? doneB.reduce(function(a,b){ return a+b.imp; },0)/doneB.length : null;
+  bars(all, { labels:B.map(function(b){ return b.label; }), h:160, unit:" kWh", partialIdx:idx2, maxBar:30,
+    series:[{name:"ซื้อจากกริด", color:cssv("--grid"), vals:B.map(function(b){ return b.imp; })}],
+    refLine:avg, refLabel:avg===null?"":"เฉลี่ย "+f(avg,0),
+    tipLabel:function(i){ return B[i].label+" · "+B[i].nDays+" วัน"+
+      (B[i].nDays<25?" (ข้อมูลไม่ครบรอบ)":"")+" · ฿"+f(B[i].cost,0); } });
+}
+function drawHist(d){
+  var sd = (d.cycle||{}).startDay || 17;
+  var B = groupRows(d._days, S.range, d.today, sd);
+  var daily = (S.range==="30"||S.range==="90");
+  var labs = B.map(function(b){ return daily ? dLabel(b.key) : b.label; });
+  var idx  = B.reduce(function(a,b,i){ return b.partial?i:a; }, -1);
+  var done = B.filter(function(b){ return !b.partial; });
+  var avgGen = done.length? done.reduce(function(a,b){ return a+(b.gen||0); },0)/done.length : null;
+  var tip = function(i){ return daily ? dLabel(B[i].key)
+                                      : B[i].label+" ("+B[i].nDays+" วัน)"; };
+
+  var g = chartHost("cGen");
+  if(g) bars(g, { labels:labs, h:150, unit:" kWh", partialIdx:idx,
+    series:[{name:"ผลิต", color:cssv("--solar"), vals:B.map(function(b){ return b.gen; })}],
+    refLine:avgGen, refLabel:"เฉลี่ย "+f(avgGen,1), tipLabel:tip });
+
+  var s = chartHost("cSrc");
+  if(s) bars(s, { labels:labs, h:150, stacked:true, unit:" kWh", partialIdx:idx,
+    series:[ {name:"แดด", color:cssv("--solar"), vals:B.map(function(b){ return b.self; })},
+             {name:"แบต", color:cssv("--batt"),  vals:B.map(function(b){ return b.dis; })},
+             {name:"กริด",color:cssv("--grid"),  vals:B.map(function(b){ return b.imp; })} ],
+    tipLabel:tip });
+
+  var m = chartHost("cMoney");
+  if(m) bars(m, { labels:labs, h:150, unit:" ฿", partialIdx:idx, maxBar:30,
+    series:[ {name:"จ่ายจริง",  color:cssv("--grid"), vals:B.map(function(b){ return b.cost; })},
+             {name:"ประหยัดได้", color:cssv("--batt"), vals:B.map(function(b){ return b.saved; })} ],
+    tipLabel:tip });
+
+  document.querySelectorAll("[data-range]").forEach(function(b){
+    b.onclick = function(){ S.range = b.getAttribute("data-range"); save("range", S.range);
+      window.scrollTo(0,0); render(); };
+  });
+  var csv = document.getElementById("btnCsv");
+  if(csv) csv.onclick = exportCsv;
+}
+function exportCsv(){
+  var rows = [["date","gen_kwh","use_kwh","import_kwh","export_kwh","charge_kwh","discharge_kwh"]]
+    .concat(storeRows().map(function(r){ return r.map(function(v){ return v===null?"":v; }); }));
+  var blob = new Blob(["﻿"+rows.map(function(r){ return r.join(","); }).join("\n")],
+                      {type:"text/csv;charset=utf-8"});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "deye-daily-"+(storeMin()||"")+"_"+(storeMax()||"")+".csv";
+  a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+}
+
+/* ===================================================================
+   6) load / events
+   =================================================================== */
+/* โหลด: ขอจาก server เฉพาะวันที่เครื่องนี้ยังไม่มี แล้ว merge เข้าคลัง
+   forceFull=true -> ขอใหม่ทั้งหมด (ปุ่ม "ดึงย้อนหลังทั้งหมด" ใน ⚙) */
+function load(forceFull){
+  var since = forceFull ? null : storeMax();
+  var url = S.api + "?f=json"
+          + (since ? "&since="+since : "")
+          + (S.key ? "&key="+encodeURIComponent(S.key) : "")
+          + "&_=" + Date.now();
+  var st = document.getElementById("stamp");
+  st.textContent = since ? "กำลังเช็ควันใหม่…" : "กำลังดึงย้อนหลังทั้งหมด…";
+
+  // หน้าที่ GAS เสิร์ฟเองอยู่ใน iframe คนละ origin -> fetch ติด CORS
+  // ใช้ google.script.run แทน (ช่องทางของ Apps Script เอง) ถ้าไม่มีค่อย fetch ตามปกติ
+  if (window.google && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(function(j){ onData(j, since); })
+      .withFailureHandler(function(e){ onFail(e, st); })
+      .getPayload(since || "", S.key || "");
+    return;
+  }
+  fetch(url).then(function(r){ return r.json(); }).then(function(j){ onData(j, since); })
+    .catch(function(e){ onFail(e, st); });
+}
+
+function onData(j, since){
+  var st = document.getElementById("stamp");
+  (function(){
+    if(!j || !j.ok){ onFail((j&&j.err)||"API ตอบ ok=false"); return; }
+    var m = storeMerge(j.days);
+    S.sync = { got:(j.days||[]).length, added:m.added, updated:m.updated, since:since, full:!!j.full };
+    j.days = storeRows();                     // ทุกหน้าอ่านจากคลังในเครื่อง ไม่ใช่จาก response
+    S.d = derive(j); S.err = null;
+    var w = (j.meta&&j.meta.warn)||[];
+    st.innerHTML =
+      "อัปเดต "+new Date(j.ts).toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"})+
+      "<br>คลัง "+storeCount()+" วัน"+(m.added?' · <b style="color:var(--good)">+'+m.added+' ใหม่</b>':'')+
+      (w.length? '<br><span style="color:var(--warn)">⚠ '+w.length+' warning</span>':'');
+    render(); fillDiag();
+  })();
+}
+
+function onFail(e, st){
+  st = st || document.getElementById("stamp");
+  (function(){
+    // ต่อ server ไม่ได้ ยังเปิดดูของเก่าในคลังได้ — บอกให้ชัดว่านี่คือข้อมูลค้าง
+    if(storeCount()){
+      S.d = derive({ ok:true, ts:Date.now(), today:new Date().toISOString().slice(0,10),
+                     now:{}, days:storeRows(), intraday:{t:[],pv:[],load:[],soc:[]},
+                     cycle:guessCycle(), meta:{warn:["offline: "+e]} });
+      S.err = null; S.offline = String(e);
+      st.innerHTML = '<span style="color:var(--warn)">ออฟไลน์ — แสดงจากคลังในเครื่อง</span><br>'+storeCount()+' วัน';
+    } else {
+      S.err = String(e); st.textContent = "โหลดไม่สำเร็จ";
+      // 🔴 เครื่องที่ไม่เคยเปิด V3 มาก่อนจะไม่มี key เก็บไว้ ⇒ getPayload โยน "bad key"
+      // หน้าเปล่า + คำว่า "โหลดไม่สำเร็จ" ทำอะไรต่อไม่ได้ — ต้องมีทางกลับหน้าเดิมในคลิกเดียว
+      // (เพิ่ม 2026-09-22 ตอนเอา V3 ไปทับ @11 ที่คนในบ้านใช้)
+      if(/bad key|ไม่มีสิทธิ|unauthor/i.test(String(e))){
+        st.innerHTML = '<span style="color:var(--crit)">เปิดไม่ได้ — ยังไม่ได้ใส่รหัส</span>'
+          + '<br><a href="?p=v2" style="color:var(--home)">กลับไปหน้าเดิม</a>'
+          + ' · <a href="#" onclick="document.getElementById(\'btnCfg\').click();return false"'
+          + ' style="color:var(--home)">ใส่รหัสที่ ⚙</a>';
+      }
+    }
+    render();
+  })();
+}
+/* รอบบิลฝั่ง client (ใช้ตอนออฟไลน์เท่านั้น — ปกติ server เป็นคนบอก) */
+function guessCycle(){
+  var sd = 17, t = new Date(), y=t.getFullYear(), m=t.getMonth(), d=t.getDate();
+  var s = (d>=sd) ? new Date(y,m,sd) : new Date(y,m-1,sd);
+  var f = function(x){ return x.getFullYear()+"-"+("0"+(x.getMonth()+1)).slice(-2)+"-"+("0"+x.getDate()).slice(-2); };
+  return { start:f(s), end:f(new Date(s.getFullYear(),s.getMonth()+1,sd-1)),
+           prevStart:f(new Date(s.getFullYear(),s.getMonth()-1,sd)),
+           prevEnd:f(new Date(s.getFullYear(),s.getMonth(),sd-1)), startDay:sd };
+}
+function fillDiag(){
+  var el = document.getElementById("diag"); if(!el||!S.d) return;
+  var m = S.d.meta||{};
+  var s = S.sync||{};
+  el.innerHTML =
+    "แหล่งรายวันฝั่ง server: <b>"+esc(m.daysSource||"?")+"</b>"+
+      (m.hasArchive?" (มี Sheet archive)":" (ไม่ได้ตั้ง SHEET_ID — proxy ตรงไป Deye)")+
+    "<br>วิธีที่ยิง history ติด: intraday=<b>"+esc(m.intradayHow||"?")+"</b> · daily=<b>"+esc(m.daysHow||"?")+"</b>"+
+    "<br>ฝั่ง server มี "+esc(m.archiveDays||0)+" วัน ("+esc(m.archiveFirst||"—")+" → "+esc(m.archiveLast||"—")+")"+
+    "<br>รอบล่าสุดขอไป since=<b>"+esc(s.since||"(ทั้งหมด)")+"</b> ได้ "+(s.got||0)+" วัน · ใหม่ "+(s.added||0)+
+    "<br>คลังในเครื่อง "+storeCount()+" วัน · จุดราย 5 นาทีวันนี้ "+(S.d.intraday.t||[]).length+
+    "<br>รอบบิล: "+esc((S.d.cycle||{}).start)+" → "+esc((S.d.cycle||{}).end)+
+    (S.storeErr? '<br><span style="color:var(--crit)">'+esc(S.storeErr)+'</span>':'')+
+    ((m.warn&&m.warn.length)? '<br><span style="color:var(--warn)">'+esc(m.warn.join(" | "))+'</span>':'');
+}
+function bindCfg(){
+  var out = document.getElementById("syncOut");
+  document.getElementById("btnSave").onclick = function(){
+    save("rate", document.getElementById("inRate").value||"4.40");
+    save("cap",  document.getElementById("inCap").value||"0");
+    save("api",  document.getElementById("inApi").value.trim()||DEFAULT_API);
+    save("key",  document.getElementById("inKey").value.trim());
+    location.reload();
+  };
+  document.getElementById("btnFull").onclick = function(){
+    out.textContent = "กำลังดึงทั้งหมด…"; load(true);
+    setTimeout(function(){ if(S.sync) out.innerHTML =
+      "ได้ "+S.sync.got+" วันจาก server · เพิ่มใหม่ "+S.sync.added+" · ทับของเดิม "+S.sync.updated+
+      "<br>คลังตอนนี้ "+storeCount()+" วัน"; }, 2500);
+  };
+  document.getElementById("btnSync").onclick = function(){
+    out.textContent = "สั่ง server ไปถาม Deye… (ย้อนหลังเยอะอาจใช้เวลาเป็นนาที)";
+    fetch(S.api+"?f=sync"+(S.key?"&key="+encodeURIComponent(S.key):"")+"&_="+Date.now())
       .then(function(r){ return r.json(); })
-      .then(render)
-      .catch(showErr);
-  }
+      .then(function(j){
+        out.innerHTML = j.ok
+          ? "server: ช่วง "+esc(j.from)+" → "+esc(j.to)+" · เพิ่ม <b>"+j.added+"</b> วัน · แก้ "+j.updated+
+            " · คลังฝั่ง server "+j.total+" วัน<br>กด \"ดึงย้อนหลังทั้งหมดใหม่\" เพื่อเอาลงเครื่อง"
+          : '<span style="color:var(--crit)">'+esc(j.err||"sync ไม่สำเร็จ")+'</span>';
+      })
+      .catch(function(e){ out.innerHTML = '<span style="color:var(--crit)">'+esc(String(e))+'</span>'; });
+  };
+  document.getElementById("btnWipe").onclick = function(){
+    if(!confirm("ล้างข้อมูลย้อนหลังในเครื่องนี้ทั้งหมด? (ของบน server ไม่ถูกแตะ)")) return;
+    try{ localStorage.removeItem("solar3_days"); }catch(e){}
+    STORE.map = {}; out.textContent = "ล้างแล้ว"; load(true);
+  };
+  fillDiag();
+}
+document.querySelectorAll(".tabs button").forEach(function(b){
+  b.onclick = function(){
+    document.querySelectorAll(".tabs button").forEach(function(x){ x.setAttribute("aria-selected","false"); });
+    b.setAttribute("aria-selected","true");
+    S.tab = b.getAttribute("data-tab"); window.scrollTo(0,0); render();
+  };
+});
+document.getElementById("btnCfg").onclick = function(){
+  S.tab = (S.tab==="cfg") ? "now" : "cfg";
+  document.querySelectorAll(".tabs button").forEach(function(x){
+    x.setAttribute("aria-selected", String(x.getAttribute("data-tab")===S.tab)); });
+  render();
+};
+document.getElementById("btnTheme").onclick = function(){
+  var cur = document.documentElement.getAttribute("data-theme");
+  var next = cur==="dark" ? "light" : (cur==="light" ? "" : "dark");
+  if(next) document.documentElement.setAttribute("data-theme", next);
+  else document.documentElement.removeAttribute("data-theme");
+  save("theme", next); render();
+};
+(function(){ var t = ls("theme",""); if(t) document.documentElement.setAttribute("data-theme", t); })();
 
-  load();
-  setInterval(load, 60000);
-  if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
+var rt; window.addEventListener("resize", function(){ clearTimeout(rt); rt = setTimeout(render, 180); });
+
+storeLoad();                      // มีของเก่าในเครื่อง -> วาดให้ดูก่อน ไม่ต้องรอเน็ต
+if(storeCount()){
+  S.d = derive({ ok:true, ts:Date.now(), today:new Date().toISOString().slice(0,10),
+                 now:{}, days:storeRows(), intraday:{t:[],pv:[],load:[],soc:[]},
+                 cycle:guessCycle(), meta:{} });
+  render();
+}
+load();
+setInterval(function(){ load(); }, 120000);
+if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(function(){}); }
 </script>
 </body>
 </html>
