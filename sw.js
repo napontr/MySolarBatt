@@ -1,7 +1,7 @@
 /* service worker ขั้นต่ำ + cache เปลือกแอป
    ข้อมูลย้อนหลังไม่ได้อยู่ในนี้ — อยู่ใน localStorage (ดู STORE ใน index.html)
    ที่ cache คือไฟล์หน้าเว็บ เพื่อให้เปิดแอปได้แม้ไม่มีเน็ต แล้วค่อยอ่านคลังในเครื่อง */
-var CACHE = "solar-v3-6";   // ขยับเลขทุกครั้งที่อัป ไม่งั้นมือถือค้างหน้าเก่า
+var CACHE = "solar-v3-7";   // ขยับเลขทุกครั้งที่อัป ไม่งั้นมือถือค้างหน้าเก่า
 var SHELL = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png"];
 
 /* 🔴 2026-09-22 บั๊กที่ทำให้ "อัปขึ้น Pages แล้วยังเห็นของเก่า" เกิดซ้ำ 2 รอบ
@@ -42,6 +42,9 @@ self.addEventListener("fetch", function(e){
       var copy = r.clone();
       caches.open(CACHE).then(function(c){ c.put(e.request, copy); }).catch(function(){});
       return r;
-    }).catch(function(){ return caches.match(e.request); })   // ออฟไลน์ค่อยใช้ของใน cache
+    /* ออฟไลน์ค่อยใช้ของใน cache
+       2026-09-22 ignoreSearch:true — หน้าตั้งค่าย้ายมาเปิดด้วย index.html?cfg=1 (v3.10.0)
+       ถ้าเทียบ URL ทั้งดุ้น query จะไม่ตรงกับ "index.html" ที่ cache ไว้ ⇒ ออฟไลน์แล้วเปิดไม่ขึ้นเลย */
+    }).catch(function(){ return caches.match(e.request, { ignoreSearch:true }); })
   );
 });

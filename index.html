@@ -280,7 +280,10 @@ details[open]>summary::before{content:"▾ "}
     <h1>88/318 Deye Solar</h1>
     <button class="iconbtn" id="btnRe" title="ดึงข้อมูลใหม่">↻</button>
     <button class="iconbtn" id="btnTheme" title="สลับธีม">◐</button>
-    <button class="iconbtn" id="btnCfg" title="ตั้งค่า">⚙</button>
+    <!-- 2026-09-22 ถอดปุ่ม ⚙ ออกจากหัวจอ — Napon สั่ง เพราะลูกชายใช้เครื่องนี้ด้วย
+         ในหน้าตั้งค่ามีปุ่ม "ล้างคลังในเครื่อง" + ช่อง API URL ที่กดพลาดแล้วแอปเปิดไม่ขึ้น
+         🔑 ตัวหน้าตั้งค่า (viewCfg/bindCfg) ยังอยู่ครบ ไม่ได้ลบ — เปลี่ยนเป็นเข้าทาง URL แทน
+            เปิดด้วย  <url ของแอป>?cfg=1  แล้วจะเด้งเข้าหน้าตั้งค่าเลย (ดู openCfg ท้ายไฟล์) -->
     <div class="stamp" id="stamp"><span class="spill wait"><i></i>กำลังเชื่อมต่อ</span></div>
   </header>
   <main id="view"></main>
@@ -299,7 +302,7 @@ details[open]>summary::before{content:"▾ "}
    =================================================================== */
 var DEFAULT_API = "https://script.google.com/macros/s/AKfycbwTr9FGZYAWcuI4UUx0JWTwgdpyrr8IPooeCNYBj0SEjproemzfiznJOiDjyPcYbBHB/exec";
 /* เปิดด้วย ...index.html?api=<url ของ /exec>&key=<ถ้ามี> ได้
-   ใช้ตอนอยากชี้ไป deployment เทสโดยไม่ต้องเข้าไปแก้ใน ⚙
+   ใช้ตอนอยากชี้ไป deployment เทสโดยไม่ต้องเข้าไปแก้ในหน้าตั้งค่า (?cfg=1)
    ค่าที่ส่งมาทาง URL ถูกบันทึกลงเครื่องเลย เปิดครั้งหน้าไม่ต้องใส่ซ้ำ */
 (function(){
   try{
@@ -313,9 +316,9 @@ var DEFAULT_API = "https://script.google.com/macros/s/AKfycbwTr9FGZYAWcuI4UUx0JW
 
 var S = {
   api:   ls("api", DEFAULT_API),
-  rate:  +ls("rate", "4.40"),      // 🟡 ค่าตั้งต้น ยังไม่ได้ยืนยันกับบิล PEA จริง — แก้ได้ที่ ⚙
+  rate:  +ls("rate", "4.40"),      // 🟡 ค่าตั้งต้น ยังไม่ได้ยืนยันกับบิล PEA จริง — แก้ได้ที่หน้าตั้งค่า (?cfg=1)
   /* 2026-09-22 Napon สั่งให้ความจุแบตตั้งต้นที่ 14.1 kWh
-     🔴 ใส่ default ใน ls() อย่างเดียวไม่พอ — ปุ่มบันทึกใน ⚙ เขียน "0" ลงเครื่องเมื่อช่องว่าง
+     🔴 ใส่ default ใน ls() อย่างเดียวไม่พอ — ปุ่มบันทึกในหน้าตั้งค่า (?cfg=1) เขียน "0" ลงเครื่องเมื่อช่องว่าง
         (เดิม: value||"0") ⇒ เครื่องที่เคยกดบันทึกจะค้างที่ 0 แล้ว default ใหม่ไม่มีวันถูกใช้
      ⇒ ต้อง migrate ด้วย: ค่าที่อ่านได้ <= 0 หรืออ่านไม่ออก ให้ถือเป็น 14.1
      🔵 เครื่องที่เคยกรอกเลขจริงไว้ (เช่น 9.6) ยังใช้ค่าของตัวเองเหมือนเดิม */
@@ -716,17 +719,28 @@ function ring(soc){
    🔑 ฮับเป็นสี่เหลี่ยม ไม่ใช่วงกลม เพราะต้องมีจุดเข้า 4 จุดแยกกัน
       ถ้าใช้วงกลม เส้นซ้ายบน/ซ้ายล่างจะวิ่งทับกันจนแยกไม่ออกว่าอันไหนคืออันไหน */
 var PF_R = 26;
-var PF_HUB = { x:186, y:112, w:46, h:50 };          // กึ่งกลาง + ขนาดกล่องฮับ
-var PF_POS = { sun:[118,40], grid:[254,40], batt:[118,184], home:[254,184] };
+/* 2026-09-22 รอบ 4 (Napon สั่ง "ลดขนาดผังลงนิดนึง ให้ fit ขึ้น แต่ห้ามกระทบไอคอน"):
+   บีบเฉพาะ "ช่องว่างแนวตั้ง" — แถวบน/ล่างขยับเข้าหาฮับข้างละ 10 หน่วย
+   ⇒ viewBox สูง 224 -> 204 (-9%) · ความกว้างคง 372 เท่าเดิม
+   🔑 ไอคอนไม่เล็กลงสักตัว เพราะ svg สเกลตาม "ความกว้าง" (width:100% + viewBox กว้างเท่าเดิม)
+      และ PF_R / scale(1.25) ของไอคอนยังเป็นค่าเดิมทั้งคู่ — ที่หายไปคือที่ว่างล้วน ๆ */
+var PF_VB  = { w:372, h:204 };
+var PF_HUB = { x:186, y:102, w:46, h:50 };          // กึ่งกลาง + ขนาดกล่องฮับ
+var PF_POS = { sun:[118,40], grid:[254,40], batt:[118,164], home:[254,164] };
 /* ทางเดินของแต่ละเส้น เรียงจาก "โหนด -> ฮับ" · คนละ corridor กัน ไม่ทับกันสักเส้น */
 /* 2026-09-22 รอบ 3 (Napon สั่ง): "แดด" กับ "กริด" กลับไปเป็นเส้นเฉียงแบบเดิม
    ส่วน "แบต" กับ "บ้าน" คงเป็นหักฉาก ⇒ ผังผสม 2 แบบตามที่สั่ง
    viewBox 344 -> 372 อีกรอบ เพราะฟอนต์ใหญ่ขึ้น ต้องการช่องข้อความ 82 หน่วย (เดิม 68)
-   ไม่งั้น "3,200 W" ที่ 19px จะล้นออกนอกกรอบ */
-var PF_PATH = {
-  batt: [[144,184],[175,184],[175,137]],
-  home: [[228,184],[197,184],[197,137]]
-};
+   ไม่งั้น "3,200 W" ที่ 19px จะล้นออกนอกกรอบ
+   🔴 รอบ 4 เปลี่ยนจากเลขตายตัว (184/137) มาคำนวณจาก PF_POS/PF_HUB
+      เพราะเลขตายตัวแปลว่าขยับโหนดทีไรต้องไล่แก้ 2 ที่ ลืมที่ใดที่หนึ่ง = เส้นลอยไม่ต่อกล่องฮับ */
+var PF_PATH = (function(){
+  var hb = PF_HUB.y + PF_HUB.h/2;                   // ขอบล่างของกล่องฮับ
+  return {
+    batt: [[PF_POS.batt[0]+PF_R, PF_POS.batt[1]], [PF_HUB.x-11, PF_POS.batt[1]], [PF_HUB.x-11, hb]],
+    home: [[PF_POS.home[0]-PF_R, PF_POS.home[1]], [PF_HUB.x+11, PF_POS.home[1]], [PF_HUB.x+11, hb]]
+  };
+})();
 
 /** เส้นเฉียง: จากขอบโหนดตรงไปขอบกล่องฮับ — คำนวณจุดตัดกับกรอบสี่เหลี่ยมของฮับ
  *  คืนค่าเรียง "โหนด -> ฮับ" (กลับ array เมื่อไฟไหลอีกทาง เหมือนเส้นหักฉาก) */
@@ -906,7 +920,7 @@ function pflow(pv, load, batt, grid, soc){
                    : pfEdge(PF_PATH.grid, cGrid, grid));                   // ซื้อ: กริด -> ฮับ
 
   var H = PF_HUB;
-  return '<div class="pflow"><svg viewBox="0 0 372 224" role="img" aria-label="ผังทิศทางไฟตอนนี้">'
+  return '<div class="pflow"><svg viewBox="0 0 '+PF_VB.w+' '+PF_VB.h+'" role="img" aria-label="ผังทิศทางไฟตอนนี้">'
     + e
     + '<rect class="pf-node" x="'+(H.x-H.w/2)+'" y="'+(H.y-H.h/2)+'" width="'+H.w+'" height="'+H.h+'" rx="13"/>'
     + '<g transform="translate('+(H.x-20)+','+(H.y-20)+') scale(1.25)">'+pfIconHub('var(--ink-2)')+'</g>'
@@ -1012,7 +1026,7 @@ function viewNow(d){
   //      2026-09-22 "ผลิตแล้ว" กับ "ซื้อไฟแล้ว" ย้ายขึ้นไปอยู่ขวามือของการ์ด Battery แล้ว
   +   (runtime||"")
   +   '</div>'
-  +   (S.cap>0?"":'<p class="note">ใส่ความจุแบต (kWh) ที่ ⚙ แล้วจะคำนวณ "แบตอยู่ได้อีกกี่ชั่วโมง" ให้</p>')
+  +   (S.cap>0?"":'<p class="note">ใส่ความจุแบต (kWh) ที่หน้าตั้งค่า (เปิดด้วย <code>?cfg=1</code>) แล้วจะคำนวณ "แบตอยู่ได้อีกกี่ชั่วโมง" ให้</p>')
   + '</div>';
 }
 
@@ -1164,7 +1178,7 @@ function rangeBar(){
 function viewHist(d){
   var all = d._days;
   if(!all.length) return '<div class="card"><div class="empty">ยังไม่มีข้อมูลรายวันในคลัง<br>'+
-    'กด ⚙ → "ดึงย้อนหลังทั้งหมด" หรือเปิด <code>?f=diag</code> ดูว่า history ติดไหม</div></div>';
+    'เปิด <code>?cfg=1</code> → "ดึงย้อนหลังทั้งหมด" หรือเปิด <code>?f=diag</code> ดูว่า history ติดไหม</div></div>';
 
   var sd = (d.cycle||{}).startDay || 17;
   var B  = groupRows(all, S.range, d.today, sd);
@@ -1302,7 +1316,7 @@ function render(){
   var v = document.getElementById("view");
   if(S.tab==="cfg"){ v.innerHTML = viewCfg(); bindCfg(); return; }
   if(S.err){ v.innerHTML = '<div class="card"><h2>เชื่อมต่อไม่ได้</h2><p class="err">'+esc(S.err)+
-    '</p><p class="note">เช็คที่ ⚙ ว่า URL ถูกไหม · หรือเปิด '+esc(S.api)+'?f=diag ในเบราว์เซอร์ดูตรง ๆ</p></div>'; return; }
+    '</p><p class="note">เปิด <code>?cfg=1</code> เช็คว่า URL ถูกไหม · หรือเปิด '+esc(S.api)+'?f=diag ในเบราว์เซอร์ดูตรง ๆ</p></div>'; return; }
   if(!S.d){ v.innerHTML = '<div class="card"><div class="skel" style="width:60%"></div>'+
     '<div class="skel" style="width:90%;margin-top:9px"></div>'+
     '<div class="skel" style="height:110px;margin-top:14px"></div></div>'; return; }
@@ -1406,7 +1420,7 @@ function exportCsv(){
    6) load / events
    =================================================================== */
 /* โหลด: ขอจาก server เฉพาะวันที่เครื่องนี้ยังไม่มี แล้ว merge เข้าคลัง
-   forceFull=true -> ขอใหม่ทั้งหมด (ปุ่ม "ดึงย้อนหลังทั้งหมด" ใน ⚙) */
+   forceFull=true -> ขอใหม่ทั้งหมด (ปุ่ม "ดึงย้อนหลังทั้งหมด" ในหน้าตั้งค่า (?cfg=1)) */
 /* กันกดรัว — ปุ่มถูกปิดระหว่างโหลดอยู่แล้วด้วย pointer-events:none แต่ load() ยังถูกเรียก
    จากที่อื่นได้ (auto refresh) จึงกันซ้ำที่ตัวฟังก์ชันด้วย */
 var LOADING = false;
@@ -1523,8 +1537,8 @@ function onFail(e, st){
       if(/bad key|ไม่มีสิทธิ|unauthor/i.test(String(e))){
         st.innerHTML = '<span style="color:var(--crit)">เปิดไม่ได้ — ยังไม่ได้ใส่รหัส</span>'
           + '<br><a href="?p=v2" style="color:var(--home)">กลับไปหน้าเดิม</a>'
-          + ' · <a href="#" onclick="document.getElementById(\'btnCfg\').click();return false"'
-          + ' style="color:var(--home)">ใส่รหัสที่ ⚙</a>';
+          + ' · <a href="#" onclick="openCfg();return false"'
+          + ' style="color:var(--home)">ใส่รหัส</a>';
       }
     }
     render();
@@ -1595,12 +1609,22 @@ document.querySelectorAll(".tabs button").forEach(function(b){
     S.tab = b.getAttribute("data-tab"); window.scrollTo(0,0); render();
   };
 });
-document.getElementById("btnCfg").onclick = function(){
+/* 2026-09-22 เดิมผูกกับปุ่ม ⚙ ที่หัวจอ ตอนนี้ปุ่มถูกถอดออกแล้ว (ลูกชายใช้ด้วย)
+   ⇒ ย้ายมาเป็นฟังก์ชันชื่อ openCfg() ซึ่งมีทางเข้า 2 ทาง:
+     1) เปิด URL ต่อท้ายด้วย ?cfg=1
+     2) ลิงก์ "ใส่รหัส" ในจอ error ตอนเปิดไม่ได้ (เรียก openCfg() ตรง ๆ)
+   🔴 ห้ามกลับไปเรียกผ่าน document.getElementById("btnCfg").click() อีก — ปุ่มไม่มีแล้ว จะ throw */
+function openCfg(){
   S.tab = (S.tab==="cfg") ? "now" : "cfg";
   document.querySelectorAll(".tabs button").forEach(function(x){
     x.setAttribute("aria-selected", String(x.getAttribute("data-tab")===S.tab)); });
   render();
-};
+}
+(function(){
+  try{
+    if(new URLSearchParams(location.search).get("cfg")==="1") S.tab = "cfg";
+  }catch(e){}
+})();
 document.getElementById("btnRe").onclick = function(){ load(); };
 document.getElementById("btnTheme").onclick = function(){
   var cur = document.documentElement.getAttribute("data-theme");
