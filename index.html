@@ -207,6 +207,15 @@ header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:righ
   .pf-dash{opacity:.9}
 }
 
+/* ---------- แถบ 24 ชั่วโมง (2026-09-22 Napon สั่ง) ----------
+   เขียว = ชาร์จเข้าแบต · ส้ม = ดึงไฟจากแบต · ไม่ลงสี = ซื้อไฟ/นิ่ง (ตามที่สั่ง)
+   สีเขียว/ส้ม ยืมโทนจากชุดเดิมของแอป ไม่ได้เพิ่มสีใหม่เข้าจาน */
+.strip svg{display:block;width:100%;height:auto}
+.strip .hr{font-size:10.5px;fill:var(--muted)}
+.stripLeg{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:11.5px;color:var(--ink-2)}
+.stripLeg span{display:inline-flex;align-items:center;gap:5px}
+.stripLeg i{width:11px;height:11px;border-radius:3px;flex-shrink:0}
+
 /* ---------- charts ---------- */
 .chart{position:relative;width:100%;touch-action:pan-y}
 .chart svg{display:block;width:100%;overflow:visible}
@@ -813,6 +822,67 @@ function battChip(batt, soc){
     + chev + '</svg>';
 }
 
+/* --- 3f) แถบ 24 ชั่วโมง — ชาร์จ / ใช้แบต / ซื้อไฟ ---
+   🔴 sample ราย 5 นาทีไม่มีค่าแบตมาตรง ๆ (intraday_ ส่งมาแค่ t·pv·load·soc·grid)
+      ได้จากสมดุล  load = pv + batt + grid  =>  batt = load - pv - grid
+      🔑 สูตรกลับด้านของที่ getData_ ใช้คำนวณ grid ⇒ ใช้นิยามเดียวกันทั้งแอป
+   🔵 เกณฑ์ 20 W = ชุดเดียวกับผังทิศทางไฟและไอคอนแบต (sensor แกว่งระดับนั้นเป็นปกติ)
+   🔵 "ไม่มีข้อมูล" กับ "ซื้อไฟ" ต้องแยกกันให้ออก: ไม่มี sample = พื้นการ์ด · มี sample แต่ซื้อไฟ = เทา */
+var STRIP_CHG = "var(--batt)";      // เขียว
+var STRIP_DIS = "var(--serious)";   // ส้ม
+var STRIP_BUY = "var(--line)";      // เทา = ซื้อไฟ/นิ่ง (ไม่ลงสีตามที่สั่ง)
+
+function dayStrip(d){
+  var it = d._intra || {t:[]}, n = (it.t||[]).length, hasG = !!(it.grid && it.grid.length);
+  // นับนาทีของแต่ละสถานะ แยกราย "ชั่วโมง" 24 ช่อง — ช่องละ 1 ชม. เหมือนเซลล์บนแผงโซลาร์
+  var H = [], k; for(k=0;k<24;k++) H.push({chg:0,dis:0,buy:0,any:0});
+  var tot = {chg:0,dis:0,buy:0};
+  for(var i=0;i<n;i++){
+    var t0 = it.t[i];
+    var t1 = (i+1<n) ? Math.min(it.t[i+1], t0+30) : Math.min(1440, t0+5);
+    if(t1<=t0) continue;
+    var pv=it.pv[i], ld=it.load[i], gr=hasG?it.grid[i]:null;
+    if(pv===null||ld===null||gr===null) continue;
+    var batt = ld - pv - gr;
+    var key = (batt < -20) ? "chg" : (batt > 20 ? "dis" : "buy");
+    // 🔴 ช่วงหนึ่งคร่อม 2 ชั่วโมงได้ — ต้องหั่นตามขอบชั่วโมง ไม่งั้นช่องที่วาดจะเพี้ยน
+    var a = t0;
+    while(a < t1){
+      var hIdx = Math.min(23, Math.floor(a/60));
+      var b = Math.min(t1, (hIdx+1)*60);
+      H[hIdx][key] += (b-a); H[hIdx].any += (b-a);
+      tot[key] += (b-a);
+      a = b;
+    }
+  }
+  var W=360, gap=2.6, cw=(W-gap*23)/24, cy=4, ch=26;
+  var o = ['<svg viewBox="0 0 '+W+' 48" role="img" aria-label="24 ช่อง ชั่วโมงละ 1 ช่อง">'];
+  for(k=0;k<24;k++){
+    var c = H[k], x = k*(cw+gap), col;
+    if(!c.any) col = "var(--surface-2)";                        // ยังไม่มีข้อมูลชั่วโมงนั้น
+    else if(c.chg >= c.dis && c.chg >= c.buy) col = STRIP_CHG;   // ชาร์จเป็นหลัก
+    else if(c.dis >= c.buy) col = STRIP_DIS;                     // ใช้แบตเป็นหลัก
+    else col = STRIP_BUY;                                        // ซื้อไฟ/นิ่ง
+    o.push('<rect x="'+x.toFixed(2)+'" y="'+cy+'" width="'+cw.toFixed(2)+'" height="'+ch+
+           '" rx="3" fill="'+col+'"/>');
+  }
+  for(var hh=0; hh<=24; hh+=6){
+    var lx = hh===0 ? 0 : (hh===24 ? W : hh*(cw+gap) - gap/2);
+    o.push('<text class="hr" x="'+lx.toFixed(1)+'" y="'+(cy+ch+15)+'" text-anchor="'+
+           (hh===0?'start':(hh===24?'end':'middle'))+'">'+hh+':00</text>');
+  }
+  o.push('</svg>');
+  var hm = function(m){ return Math.floor(m/60)+":"+("0"+Math.round(m%60)).slice(-2); };
+  return '<div class="strip">'+o.join('')+'</div>'
+    + '<div class="stripLeg">'
+    +   '<span><i style="background:'+STRIP_CHG+'"></i>ชาร์จเข้าแบต '+hm(tot.chg)+' ชม.</span>'
+    +   '<span><i style="background:'+STRIP_DIS+'"></i>ใช้ไฟจากแบต '+hm(tot.dis)+' ชม.</span>'
+    +   '<span><i style="background:'+STRIP_BUY+'"></i>ซื้อไฟ/นิ่ง '+hm(tot.buy)+' ชม.</span>'
+    + '</div>'
+    + (n ? '<p class="note">1 ช่อง = 1 ชั่วโมง ลงสีตามสถานะที่กินเวลามากสุดในชั่วโมงนั้น · ตัวเลขข้างบนเป็นเวลารวมจริงราย 5 นาที</p>'
+         : '<p class="note">ยังไม่มีข้อมูลราย 5 นาทีของวันนี้</p>');
+}
+
 function pflow(pv, load, batt, grid, soc){
   var P=PF_POS, gridOut = (grid!==null && grid<0);
   var cSun='var(--solar)', cBatt='var(--batt)', cHome='var(--home)',
@@ -918,12 +988,18 @@ function viewNow(d){
   +   pflow(pv, load, batt, grid, soc)
   + '</div>'
 
+  // 2026-09-22 แถบ 24 ชั่วโมง วางใต้ "ทิศทางไฟ" ตามที่ Napon สั่ง
+  + '<div class="card">'
+  +   '<h2>24 ชั่วโมง<span class="badge">วันนี้</span></h2>'
+  +   dayStrip(d)
+  + '</div>'
+
   + '<div class="card">'
   +   '<h2>วันนี้ถึงตอนนี้</h2>'
   +   '<div class="tiles">'
-  +     (st.hasGrid
-      ? tile("ไม่ซื้อไฟจากกริดเลย", f(st.gridFreeMin/60,1), "ชม.", "วัดจากมิเตอร์ราย 5 นาที (<50 W)", "good")
-      : tile("แดดคลุมบ้านได้เอง", f(st.coverMin/60,1), "ชม.", "ช่วงที่ผลิต ≥ ที่ใช้", "good"))
+  /*      2026-09-22 Napon ตัดออกทั้ง "ไม่ซื้อไฟจากกริดเลย" และ "แดดคลุมบ้านได้เอง"
+          (อันหลังลองใส่แล้วเขาบอกว่างง) ⇒ ช่องนี้ไม่มีการ์ดแล้ว
+          🔵 st.gridFreeMin / st.coverMin ยังคำนวณอยู่ใน derive() เอากลับมาแสดงได้ทุกเมื่อ */
   +     tile("ผลิตสูงสุด", fw(st.peak), "W", st.peakAt===null?"—":"เวลา "+hhmm(st.peakAt), "gen")
   //      2026-09-22 "ผลิตแล้ว" กับ "ซื้อไฟแล้ว" ย้ายขึ้นไปอยู่ขวามือของการ์ด Battery แล้ว
   +   (runtime||"")
