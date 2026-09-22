@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#eda100">
-<title>Solar</title>
+<title>88/318 Deye Solar</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2218%22%20fill%3D%22%2328a745%22%2F%3E%3Crect%20x%3D%2217.6%22%20y%3D%2233.2%22%20width%3D%2260%22%20height%3D%2233.5%22%20rx%3D%227.4%22%20fill%3D%22none%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%225.2%22%2F%3E%3Crect%20x%3D%2279.4%22%20y%3D%2243.2%22%20width%3D%224.5%22%20height%3D%2213.5%22%20rx%3D%221.8%22%20fill%3D%22%23ffffff%22%2F%3E%3Crect%20x%3D%2227.5%22%20y%3D%2243.1%22%20width%3D%2229%22%20height%3D%2213.7%22%20rx%3D%223%22%20fill%3D%22%23ffffff%22%2F%3E%3C%2Fsvg%3E">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -53,8 +53,20 @@ body{display:flex;justify-content:center;padding:0 0 env(safe-area-inset-bottom)
 
 /* ---------- chrome ---------- */
 header{display:flex;align-items:center;gap:10px;padding:2px 2px 7px}
-header h1{font-size:15px;font-weight:600;margin:0;letter-spacing:-.01em}
+header h1{font-size:14px;font-weight:600;margin:0;letter-spacing:-.01em;white-space:nowrap}
 header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:right;line-height:1.35}
+/* 2026-09-22 แคปซูลสถานะ (Napon สั่ง) — เดิมบอกออฟไลน์ด้วยข้อความสีส้มลอย ๆ อ่านผ่านตาได้ง่าย
+   จุดกลม + พื้นสีอ่อน ทำให้เห็นสถานะก่อนอ่านตัวหนังสือ · จุดกะพริบเฉพาะตอน Online */
+.spill{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;
+  padding:2px 9px 2px 7px;border-radius:999px;letter-spacing:.02em;
+  background:color-mix(in srgb,var(--sc) 15%,transparent);color:var(--sc)}
+.spill i{width:6px;height:6px;border-radius:50%;background:var(--sc);flex-shrink:0}
+.spill.on{--sc:var(--good)}
+.spill.on i{animation:spdot 2s ease-in-out infinite}
+.spill.off{--sc:var(--warn)}
+.spill.wait{--sc:var(--muted)}
+@keyframes spdot{0%,100%{opacity:1}50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){ .spill.on i{animation:none} }
 .iconbtn{border:1px solid var(--ring);background:var(--surface);color:var(--ink-2);
   width:32px;height:32px;border-radius:10px;font-size:14px;cursor:pointer;flex-shrink:0}
 .iconbtn:active{transform:scale(.94)}
@@ -81,14 +93,55 @@ header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:righ
 .tabs button[aria-selected="true"] .g{transform:translateY(-1px)}
 
 /* ---------- hero ---------- */
-.hero{display:flex;align-items:center;gap:16px}
-/* 2026-09-22 หัวข้อ "Battery" กลางการ์ด แทนป้ายเล็กที่เคยอยู่ในโดนัท */
-.heroTitle{font-size:19px;font-weight:700;text-align:center;letter-spacing:.01em;
-  margin:0 0 9px;line-height:1.1}
-.ring{width:108px;height:108px;flex-shrink:0;position:relative}
+/* 2026-09-22 รอบ 2: 3 คอลัมน์ "กว้างเท่ากัน" ตามที่ Napon สั่งให้สมมาตร
+   ของเดิมคอลัมน์ซ้ายเป็น auto (กว้างตามโดนัท) ทำให้ 3 ช่องไม่เท่ากัน */
+.hero{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;align-items:stretch}
+/* ทุกกล่องในแถบบน: ป้าย/ตัวเลข/ไอคอน จัดกึ่งกลางทั้งแนวตั้งและแนวนอน · ป้ายเป็นตัวหนา */
+.hero .tile{align-items:center;text-align:center}
+.hero .tile .l{font-weight:700;color:var(--ink-2)}
+.hero .tile .v,.hero .tile .s{width:100%}
+/* 2026-09-22 กล่อง Battery เล็กลง + ย้ายการ์ด ผลิตแล้ว/ซื้อไฟแล้ว มาอยู่ขวามือ (Napon สั่ง) */
+/* 3 คอลัมน์: ซ้าย = Battery+โดนัท · กลาง = ชาร์จ/จ่าย · ขวา = ผลิตแล้ว/ซื้อไฟแล้ว
+   สัดส่วนตามสเก็ตช์ที่ Napon ส่งมา (37% / 26% / 27%) */
+.heroL{display:flex;flex-direction:column;align-items:center;justify-content:center}
+/* 2026-09-22 ขยายตัวอักษรส่วนบนทั้งแถบ (Napon สั่ง) — ของเดิมเล็กไปเมื่อเทียบกับการ์ดล่าง */
+.ringWrap{text-align:center}
+.ringWrap .mx{font-size:11.5px;color:var(--muted);margin-top:3px;white-space:nowrap}
+.heroR{min-width:0;display:grid;grid-template-rows:1fr 1fr;gap:6px}
+.heroR .tile{display:flex;flex-direction:column;justify-content:center;padding:7px 9px}
+.heroR .tile .l{font-size:12px}
+.heroR .tile .v{font-size:22px}
+.heroR .tile .v u{font-size:11px}
+.heroR .tile .s{font-size:11px}
+/* กล่องกลางสูงเต็มแถว — เขียว = ไฟเข้าแบต · แดง = ดึงออกจากแบต (สีชุดเดียวกับผังไฟวิ่ง) */
+.hero > .tile.tb{min-width:0;box-sizing:border-box;display:flex;flex-direction:column;
+  justify-content:center;padding:7px 9px}
+.tile.tb .l{white-space:normal;font-size:12px}
+.tile.tb .v{font-size:31px}
+.tile.tb .v u{font-size:12px}
+.tile.tb .s{color:var(--tc);margin-top:3px;font-size:11.5px}
+.tile.tb .bsign{font-size:15px;font-weight:700}
+
+/* ---------- ไอคอนแบตในกล่องชาร์จ/จ่าย ----------
+   ระดับไฟในไอคอน = SOC จริง · ลูกศรวิ่งเข้า/ออกตามเครื่องหมายของ batt
+   ความเร็วผูกกับกำลังไฟผ่าน --sp เหมือนผังไฟวิ่ง ⇒ 2 ที่ในหน้าเดียวเล่าเรื่องเดียวกัน */
+.bchip{display:block;width:100%;max-width:104px;height:auto;margin:4px auto 5px}
+.bchev{animation:bchevOut var(--sp,1.3s) linear infinite}
+.bchip.in .bchev{animation-name:bchevIn}
+.bchev:nth-of-type(2){animation-delay:calc(var(--sp,1.3s) * .33)}
+.bchev:nth-of-type(3){animation-delay:calc(var(--sp,1.3s) * .66)}
+@keyframes bchevOut{0%{opacity:0;transform:translateX(-7px)}
+                    40%{opacity:1}100%{opacity:0;transform:translateX(9px)}}
+@keyframes bchevIn {0%{opacity:0;transform:translateX(9px)}
+                    40%{opacity:1}100%{opacity:0;transform:translateX(-7px)}}
+@media (prefers-reduced-motion:reduce){
+  .bchev{animation:none;opacity:.85}   /* ลูกศรยังชี้ทิศอยู่ แค่ไม่วิ่ง */
+}
+.ring{width:132px;height:132px;flex-shrink:0;position:relative}
 .ring .val{position:absolute;inset:0;display:flex;flex-direction:column;
   align-items:center;justify-content:center}
-.ring .val b{font-size:36px;font-weight:600;line-height:1;letter-spacing:-.02em}
+.ring .val .rname{font-size:12.5px;font-weight:700;color:var(--ink-2);line-height:1;margin-bottom:2px}
+.ring .val b{font-size:39px;font-weight:600;line-height:1;letter-spacing:-.02em}
 .ring .val b .pc{font-size:18px;font-weight:600;color:inherit;opacity:.75}
 .pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;
   padding:4px 11px;border-radius:999px}
@@ -131,15 +184,15 @@ header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:righ
    เส้นจาง = เส้นทางที่มีอยู่ · เส้นประวิ่ง = มีไฟไหลอยู่จริงตอนนี้
    ทิศวิ่ง = ทิศของ path (จุดเริ่ม -> จุดจบ) ⇒ โค้ดสลับต้น/ปลายตามเครื่องหมายของค่า
    ความเร็ว = ผูกกับกำลังไฟจริงผ่าน --sp (ยิ่งเยอะยิ่งเร็ว) ไม่ใช่ความเร็วคงที่ */
-.pflow svg{display:block;width:100%;max-width:280px;margin:0 auto;height:auto;overflow:visible}
-.pf-line{fill:none;stroke-width:2.5;stroke-linecap:round;opacity:.22}
-.pf-dash{fill:none;stroke-width:2.5;stroke-linecap:round;stroke-dasharray:7 13;
+.pflow svg{display:block;width:100%;max-width:372px;margin:0 auto;height:auto;overflow:visible}
+.pf-line{fill:none;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round;opacity:.22}
+.pf-dash{fill:none;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 14;
   animation:pfrun var(--sp,1.6s) linear infinite}
-@keyframes pfrun{to{stroke-dashoffset:-20}}
+@keyframes pfrun{to{stroke-dashoffset:-22}}
 .pf-node{fill:var(--surface-2);stroke:var(--ring);stroke-width:1}
-.pf-lab{font-size:10.5px;fill:var(--muted)}
-.pf-val{font-size:14.5px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
-.pf-u{font-size:8.5px;fill:var(--muted);font-weight:400}
+.pf-lab{font-size:13px;fill:var(--muted)}
+.pf-val{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.pf-u{font-size:10.5px;fill:var(--muted);font-weight:400}
 .pf-rays{transform-box:fill-box;transform-origin:center;animation:pfspin 26s linear infinite}
 @keyframes pfspin{to{transform:rotate(360deg)}}
 .pf-off{opacity:.34}
@@ -210,10 +263,10 @@ details[open]>summary::before{content:"▾ "}
 <body>
 <div class="app">
   <header>
-    <h1>Solar</h1>
+    <h1>88/318 Deye Solar</h1>
     <button class="iconbtn" id="btnTheme" title="สลับธีม">◐</button>
     <button class="iconbtn" id="btnCfg" title="ตั้งค่า">⚙</button>
-    <div class="stamp" id="stamp">กำลังโหลด…</div>
+    <div class="stamp" id="stamp"><span class="spill wait"><i></i>กำลังเชื่อมต่อ</span></div>
   </header>
   <main id="view"></main>
 </div>
@@ -294,6 +347,30 @@ function storeMax(){ var k = Object.keys(STORE.map); return k.length ? k.sort()[
 function storeMin(){ var k = Object.keys(STORE.map); return k.length ? k.sort()[0] : null; }
 function storeCount(){ return Object.keys(STORE.map).length; }
 function storeBytes(){ try{ return (localStorage.getItem("solar3_days")||"").length; }catch(e){ return 0; } }
+
+/* -------------------------------------------------------------------
+   snapshot ค่า "ตอนนี้" ล่าสุด (เพิ่ม 2026-09-22)
+   ปัญหา: ตอน boot เดิมส่ง now:{} + intraday ว่างเข้า derive() ⇒ การ์ด Battery
+          กับผังไฟวิ่งโชว์ "—" ทุกช่องจนกว่า ?f=json จะกลับมา (วัดได้ >38.9 วิ)
+   แก้:   จำ now + intraday ของรอบล่าสุดไว้ แล้ววาดทันทีตอนเปิด พร้อมบอกว่าเป็นค่าเก่า
+   🔵 ใช้เฉพาะ snapshot ของ "วันนี้" — ข้ามวันแล้วค่ากำลังไฟกับกราฟในวันใช้ต่อไม่ได้
+   ~20 KB ต่อ snapshot (เพดาน localStorage ~5 MB)
+   ------------------------------------------------------------------- */
+function snapSave(j){
+  try{
+    localStorage.setItem("solar3_snap", JSON.stringify({
+      ts: j.ts, day: j.today, now: j.now||{}, intraday: j.intraday||null
+    }));
+  }catch(e){}   // เต็มก็แค่ไม่มี snapshot ไม่ทำให้หน้าพัง
+}
+function snapLoad(){
+  try{
+    var s = JSON.parse(localStorage.getItem("solar3_snap")||"null");
+    if(!s) return null;
+    if(s.day !== new Date().toISOString().slice(0,10)) return null;   // ข้ามวันแล้ว ทิ้ง
+    return s;
+  }catch(e){ return null; }
+}
 
 /* ===================================================================
    1) utils
@@ -594,13 +671,15 @@ function niceMax(v){
 function ring(soc){
   var R=48, C=2*Math.PI*R, pct=(soc===null?0:Math.max(0,Math.min(100,soc)));
   var col = socColor(soc);
-  return '<div class="ring"><svg viewBox="0 0 108 108" width="108" height="108">'+
+  // 2026-09-22 ปล่อยให้ CSS คุมขนาดกล่อง (ย่อโดนัทลงโดยไม่ต้องแก้ค่าในนี้)
+  return '<div class="ring"><svg viewBox="0 0 108 108" width="100%" height="100%">'+
     '<circle cx="54" cy="54" r="'+R+'" fill="none" stroke="var(--line)" stroke-width="9"/>'+
     '<circle cx="54" cy="54" r="'+R+'" fill="none" stroke="'+col+'" stroke-width="9" stroke-linecap="round"'+
     ' stroke-dasharray="'+(C*pct/100).toFixed(1)+' '+C.toFixed(1)+'" transform="rotate(-90 54 54)"/>'+
-    // 2026-09-22 เอาป้าย "แบตเตอรี่" ออกจากในโดนัท — ย้ายขึ้นไปเป็นหัวข้อ "Battery" กลางการ์ด
-    //            แล้วขยายตัวเลข % ให้ใหญ่ขึ้นแทนที่ว่างที่ได้คืนมา (Napon สั่ง)
-    '</svg><div class="val"><b style="color:'+col+'">'+(soc===null?"—":f(soc))+
+    // 2026-09-22 รอบ 2: "Battery" กลับเข้ามาอยู่ "เหนือตัวเลข %" ในโดนัท
+    //            เพราะตอนวางไว้ซ้ายการ์ด เหลือที่ว่างเยอะเกิน (Napon สั่ง)
+    '</svg><div class="val"><span class="rname">Battery</span>'+
+    '<b style="color:'+col+'">'+(soc===null?"—":f(soc))+
     '<span class="pc">%</span></b></div></div>';
 }
 
@@ -609,15 +688,42 @@ function ring(soc){
      batt < 0 = ชาร์จเข้าแบต (ไฟไหลจากฮับไปแบต) · batt > 0 = แบตจ่ายออก
      grid > 0 = ซื้อจากกริด (ไหลเข้าบ้าน)        · grid < 0 = ไหลออกกริด
    ต่ำกว่า 20 W ถือว่านิ่ง — ไม่วิ่ง เพราะ sensor แกว่งระดับนั้นเป็นปกติ */
-var PF_R = 26, PF_HUB_R = 21;
-var PF_POS = { sun:[62,42], grid:[238,42], batt:[62,206], home:[238,206], hub:[150,124] };
+/* 2026-09-22 รื้อผังใหม่ตามที่ Napon สั่ง:
+     - ตัวหนังสือย้ายออก "ด้านนอก" ของไอคอน — ซ้ายของโหนดซ้าย · ขวาของโหนดขวา
+       (เดิมอยู่ใต้ไอคอน ทำให้ผังสูงและตัวเลขเล็ก)
+     - ขนาดตัวเลขเท่ากันทั้ง 4 โหนด ("ใหญ่ขึ้นให้เท่ากับในกลุ่ม")
+     - เส้นเปลี่ยนจากทแยงเป็น "หักฉาก" แนวนอน+แนวดิ่ง และหนาขึ้น
+   🔑 ฮับเป็นสี่เหลี่ยม ไม่ใช่วงกลม เพราะต้องมีจุดเข้า 4 จุดแยกกัน
+      ถ้าใช้วงกลม เส้นซ้ายบน/ซ้ายล่างจะวิ่งทับกันจนแยกไม่ออกว่าอันไหนคืออันไหน */
+var PF_R = 26;
+var PF_HUB = { x:186, y:112, w:46, h:50 };          // กึ่งกลาง + ขนาดกล่องฮับ
+var PF_POS = { sun:[118,40], grid:[254,40], batt:[118,184], home:[254,184] };
+/* ทางเดินของแต่ละเส้น เรียงจาก "โหนด -> ฮับ" · คนละ corridor กัน ไม่ทับกันสักเส้น */
+/* 2026-09-22 รอบ 3 (Napon สั่ง): "แดด" กับ "กริด" กลับไปเป็นเส้นเฉียงแบบเดิม
+   ส่วน "แบต" กับ "บ้าน" คงเป็นหักฉาก ⇒ ผังผสม 2 แบบตามที่สั่ง
+   viewBox 344 -> 372 อีกรอบ เพราะฟอนต์ใหญ่ขึ้น ต้องการช่องข้อความ 82 หน่วย (เดิม 68)
+   ไม่งั้น "3,200 W" ที่ 19px จะล้นออกนอกกรอบ */
+var PF_PATH = {
+  batt: [[144,184],[175,184],[175,137]],
+  home: [[228,184],[197,184],[197,137]]
+};
 
-function pfEdge(a, b, col, watt){
-  var dx=b[0]-a[0], dy=b[1]-a[1], L=Math.sqrt(dx*dx+dy*dy);
-  if(!L) return '';
-  var ux=dx/L, uy=dy/L, ra=(a===PF_POS.hub?PF_HUB_R:PF_R)+4, rb=(b===PF_POS.hub?PF_HUB_R:PF_R)+4;
-  var d = 'M'+(a[0]+ux*ra).toFixed(1)+' '+(a[1]+uy*ra).toFixed(1)
-        + 'L'+(b[0]-ux*rb).toFixed(1)+' '+(b[1]-uy*rb).toFixed(1);
+/** เส้นเฉียง: จากขอบโหนดตรงไปขอบกล่องฮับ — คำนวณจุดตัดกับกรอบสี่เหลี่ยมของฮับ
+ *  คืนค่าเรียง "โหนด -> ฮับ" (กลับ array เมื่อไฟไหลอีกทาง เหมือนเส้นหักฉาก) */
+function pfDiag(n){
+  var hx=PF_HUB.x, hy=PF_HUB.y, dx=n[0]-hx, dy=n[1]-hy;
+  var L=Math.sqrt(dx*dx+dy*dy), ux=dx/L, uy=dy/L;
+  var t=Math.min((PF_HUB.w/2+4)/Math.abs(dx), (PF_HUB.h/2+4)/Math.abs(dy));
+  return [[ +(n[0]-ux*(PF_R+4)).toFixed(1), +(n[1]-uy*(PF_R+4)).toFixed(1) ],
+          [ +(hx+dx*t).toFixed(1),          +(hy+dy*t).toFixed(1) ]];
+}
+PF_PATH.sun  = pfDiag(PF_POS.sun);
+PF_PATH.grid = pfDiag(PF_POS.grid);
+
+/** pts = ทางเดินเรียงตามทิศไฟจริง (กลับด้าน array = กลับทิศวิ่ง) */
+function pfEdge(pts, col, watt){
+  var d = 'M'+pts[0][0]+' '+pts[0][1];
+  for(var i=1;i<pts.length;i++) d += 'L'+pts[i][0]+' '+pts[i][1];
   var s = '<path class="pf-line" d="'+d+'" stroke="'+col+'"/>';
   if(watt!==null && watt!==undefined && !isNaN(watt) && Math.abs(watt)>=20){
     // 3000 W -> ~0.55s (เร็ว) · 100 W -> ~2.9s (ช้า) — เห็นความต่างของกำลังไฟได้จากจังหวะ
@@ -627,12 +733,16 @@ function pfEdge(a, b, col, watt){
   return s;
 }
 
-function pfNode(p, icon, label, val, col, on){
+/** side = "left" -> ตัวหนังสืออยู่ซ้ายของไอคอน (ชิดขวา) · "right" -> อยู่ขวา (ชิดซ้าย) */
+function pfNode(p, icon, label, val, col, on, side){
+  var left = (side === "left");
+  var tx = left ? (p[0]-PF_R-10) : (p[0]+PF_R+10);
+  var anc = left ? "end" : "start";
   return '<g class="'+(on?'':'pf-off')+'">'
     + '<circle class="pf-node" cx="'+p[0]+'" cy="'+p[1]+'" r="'+PF_R+'"/>'
-    + '<g transform="translate('+(p[0]-16)+','+(p[1]-16)+')">'+icon+'</g>'
-    + '<text class="pf-lab" x="'+p[0]+'" y="'+(p[1]+41)+'" text-anchor="middle">'+label+'</text>'
-    + '<text class="pf-val" x="'+p[0]+'" y="'+(p[1]+57)+'" text-anchor="middle" fill="'+col+'">'
+    + '<g transform="translate('+(p[0]-20)+','+(p[1]-20)+') scale(1.25)">'+icon+'</g>'
+    + '<text class="pf-lab" x="'+tx+'" y="'+(p[1]-4)+'" text-anchor="'+anc+'">'+label+'</text>'
+    + '<text class="pf-val" x="'+tx+'" y="'+(p[1]+15)+'" text-anchor="'+anc+'" fill="'+col+'">'
     +   val+'<tspan class="pf-u"> W</tspan></text></g>';
 }
 
@@ -666,31 +776,64 @@ function pfIconHub(c){
   return '<path d="M17.8 7 L10 17.6 H15.2 L14.2 25 L22 14.4 H16.8 Z" fill="'+c+'"/>';
 }
 
+/* --- 3e) ไอคอนแบตในกล่อง "ชาร์จ/จ่าย" ---
+   แบตวางซ้าย ลูกศรอยู่ขวา ⇒ ชี้ซ้าย = ไฟเข้าแบต · ชี้ขวา = ดึงออกจากแบต
+   ระดับไฟในไอคอน = SOC จริง (ไม่ใช่ภาพประกอบลอย ๆ) · สีรับจาก --tc ของกล่อง = สีเดียวกับเส้นในผังไฟวิ่ง
+   เกณฑ์ 20 W และสูตรความเร็วใช้ชุดเดียวกับ pflow() — สองที่ต้องเล่าเรื่องเดียวกันเสมอ */
+function battChip(batt, soc){
+  var on  = batt!==null && batt!==undefined && !isNaN(batt) && Math.abs(batt)>20;
+  var chg = on && batt<0;
+  var lvl = (soc===null||soc===undefined||isNaN(soc)) ? 0 : Math.max(0,Math.min(100,soc));
+  var w   = 38*lvl/100;
+  var sp  = on ? Math.max(0.50, Math.min(2.4, 2.4 - Math.abs(batt)/1400)) : 1.3;
+  var chev = '';
+  if(on){
+    var d = chg ? 'M5 -6 L-1 0 L5 6' : 'M-1 -6 L5 0 L-1 6';
+    for(var i=0;i<3;i++)
+      // 🔴 ต้องห่อ <g> แล้วขยับ <path> ข้างใน — CSS transform ของแอนิเมชัน "ทับ" attribute
+      //    transform ของ SVG ทั้งอัน (ไม่ใช่บวกกัน) ถ้าใส่ไว้ที่ path เดียวกัน ลูกศรจะกระโดด
+      //    ไปมุมซ้ายบนแล้วหลุดออกนอก viewBox = หายไปเงียบ ๆ (เจอจริง 22 ก.ย. 2026 ตอนเปิดดูบนจอ)
+      // 🔵 delay ใส่ inline ไม่ใช้ :nth-of-type เพราะตอนนี้แต่ละ path อยู่คนละ <g> แล้ว
+      chev += '<g transform="translate('+(60+i*12)+' 16)">'
+           +  '<path class="bchev" d="'+d+'" style="animation-delay:'+(sp*i/3).toFixed(2)+'s"'
+           +  ' fill="none" stroke="var(--tc)" stroke-width="2.4"'
+           +  ' stroke-linecap="round" stroke-linejoin="round"/></g>';
+  }
+  return '<svg class="bchip'+(chg?' in':'')+'" viewBox="0 0 96 32" aria-hidden="true"'
+    + ' style="--sp:'+sp.toFixed(2)+'s">'
+    + '<rect x="2" y="5" width="44" height="22" rx="5.5" fill="none" stroke="var(--tc)" stroke-width="2.2"/>'
+    + '<rect x="47.5" y="12" width="4" height="8" rx="1.6" fill="var(--tc)"/>'
+    + (w>0 ? '<rect x="5.5" y="8.5" width="'+w.toFixed(1)+'" height="15" rx="2.6" fill="var(--tc)"/>' : '')
+    + chev + '</svg>';
+}
+
 function pflow(pv, load, batt, grid, soc){
   var P=PF_POS, gridOut = (grid!==null && grid<0);
   var cSun='var(--solar)', cBatt='var(--batt)', cHome='var(--home)',
       cGrid = gridOut ? 'var(--export)' : 'var(--grid)';
   var on = function(v){ return v!==null && v!==undefined && !isNaN(v) && Math.abs(v)>=20; };
 
-  var e = pfEdge(P.sun, P.hub, cSun, pv)                       // แดดเข้าเสมอ
-        + pfEdge(P.hub, P.home, cHome, load)                   // บ้านออกเสมอ
-        + (batt!==null && batt<0 ? pfEdge(P.hub, P.batt, cBatt, batt)    // ชาร์จ
-                                 : pfEdge(P.batt, P.hub, cBatt, batt))   // จ่ายออก
-        + (gridOut ? pfEdge(P.hub, P.grid, cGrid, grid)                  // ไหลออกกริด
-                   : pfEdge(P.grid, P.hub, cGrid, grid));                // ซื้อจากกริด
+  var rev = function(a){ return a.slice().reverse(); };     // กลับทิศวิ่งของเส้น
+  var e = pfEdge(PF_PATH.sun, cSun, pv)                            // แดดเข้าเสมอ
+        + pfEdge(rev(PF_PATH.home), cHome, load)                   // บ้านออกเสมอ (ฮับ -> บ้าน)
+        + (batt!==null && batt<0 ? pfEdge(rev(PF_PATH.batt), cBatt, batt)  // ชาร์จ: ฮับ -> แบต
+                                 : pfEdge(PF_PATH.batt, cBatt, batt))      // จ่ายออก: แบต -> ฮับ
+        + (gridOut ? pfEdge(rev(PF_PATH.grid), cGrid, grid)                // ไหลออกกริด: ฮับ -> กริด
+                   : pfEdge(PF_PATH.grid, cGrid, grid));                   // ซื้อ: กริด -> ฮับ
 
-  return '<div class="pflow"><svg viewBox="0 0 300 272" role="img" aria-label="ผังทิศทางไฟตอนนี้">'
+  var H = PF_HUB;
+  return '<div class="pflow"><svg viewBox="0 0 372 224" role="img" aria-label="ผังทิศทางไฟตอนนี้">'
     + e
-    + '<circle class="pf-node" cx="'+P.hub[0]+'" cy="'+P.hub[1]+'" r="'+PF_HUB_R+'"/>'
-    + '<g transform="translate('+(P.hub[0]-16)+','+(P.hub[1]-16)+')">'+pfIconHub('var(--ink-2)')+'</g>'
-    + pfNode(P.sun,  pfIconSun(cSun),        'แดด', fw(pv), cSun, on(pv))
-    + pfNode(P.grid, pfIconGrid(cGrid),
-        (grid===null?'กริด':(gridOut?'ไหลออกกริด':'ซื้อจากกริด')),
-        (grid===null?'—':fw(Math.abs(grid))), cGrid, on(grid))
+    + '<rect class="pf-node" x="'+(H.x-H.w/2)+'" y="'+(H.y-H.h/2)+'" width="'+H.w+'" height="'+H.h+'" rx="13"/>'
+    + '<g transform="translate('+(H.x-20)+','+(H.y-20)+') scale(1.25)">'+pfIconHub('var(--ink-2)')+'</g>'
+    + pfNode(P.sun,  pfIconSun(cSun),  'แดด', fw(pv), cSun, on(pv), "left")
     + pfNode(P.batt, pfIconBatt(cBatt, soc),
         (batt!==null&&batt<0?'ชาร์จเข้าแบต':'จากแบต'),
-        (batt===null?'—':fw(Math.abs(batt))), cBatt, on(batt))
-    + pfNode(P.home, pfIconHome(cHome),      'บ้าน', fw(load), cHome, on(load))
+        (batt===null?'—':fw(Math.abs(batt))), cBatt, on(batt), "left")
+    + pfNode(P.grid, pfIconGrid(cGrid),
+        (grid===null?'กริด':(gridOut?'ไหลออกกริด':'ซื้อจากกริด')),
+        (grid===null?'—':fw(Math.abs(grid))), cGrid, on(grid), "right")
+    + pfNode(P.home, pfIconHome(cHome), 'บ้าน', fw(load), cHome, on(load), "right")
     + '</svg></div>';
 }
 
@@ -711,6 +854,14 @@ function viewNow(d){
   var state = batt===null ? "—" : (batt<-20?"กำลังชาร์จ":(batt>20?"กำลังจ่ายไฟ":"นิ่ง"));
   var col = socColor(soc);
 
+  /* 2026-09-22 ทิศของแบตอ่านจากเครื่องหมายของ batt ที่เดียว (batt<0 = ชาร์จเข้า)
+     เขียว = ไฟเข้าแบต · แดง = ดึงออกจากแบต — สีชุดเดียวกับเส้นในผังไฟวิ่ง ไม่ให้แปลคนละอย่างในหน้าเดียว
+     ต่ำกว่า 20 W ถือว่านิ่ง ตามเกณฑ์เดียวกับ pflow() เพราะ sensor แกว่งระดับนั้นเป็นปกติ */
+  var bCol = (batt===null || Math.abs(batt)<=20) ? "var(--muted)"
+           : (batt<0 ? "var(--batt)" : "var(--grid)");
+  // 2026-09-22 ตัด bLbl/bSign ("+ เข้าแบต" / "− ออกจากแบต") ทิ้ง — Napon สั่งเอาบรรทัดนั้นออก
+  // เหลือ bCol ตัวเดียวที่ยังใช้ ⇒ ไม่ปล่อยตัวแปรตายค้างไว้ในไฟล์
+
   // เวลาที่แบตอยู่ได้ — ต้องรู้ความจุแบตก่อน ไม่รู้ = ไม่เดา
   var runtime = "";
   if(S.cap>0 && batt!==null && batt>20 && soc!==null){
@@ -726,20 +877,35 @@ function viewNow(d){
 
   return ''
   + '<div class="card">'
-  +   '<div class="heroTitle">Battery</div>'
-  +   '<div class="hero">'+ring(soc)
-  +     '<div style="min-width:0">'
-  +       '<span class="pill" style="background:color-mix(in srgb,'+col+' 16%,transparent);color:'+col+'">'
-  +         state+(batt!==null?' · '+fw(Math.abs(batt))+' W':'')+'</span>'
-  +       '<div class="meta">'
-  +         'สูงสุดวันนี้ <b>'+f(st.socMax)+'%</b> · ต่ำสุด <b>'+f(st.socMin)+'%</b>'
+  //      2026-09-22 "Battery" ย้ายมาอยู่ซ้ายสุด จัดกึ่งกลางแนวตั้งให้ตรงกลางโดนัท (Napon สั่ง)
+  //      ได้ความสูงคืนมาด้วย เพราะไม่ต้องเสียบรรทัดหัวข้อเต็มแถวอีกแล้ว
+  /* 2026-09-22 โครง 3 คอลัมน์ตามสเก็ตช์ที่ Napon ส่งมา:
+       ซ้าย   = Battery + โดนัท + สูงสุดวันนี้
+       กลาง   = ชาร์จ/จ่าย จากแบต — กล่องเดียวสูงเต็ม (ป้าย · ตัวเลข · +/− จากแบต)
+       ขวา    = ผลิตแล้ว (บน) · ซื้อไฟแล้ว (ล่าง)
+     🔵 ตัด "ต่ำสุด" ออกแล้วตั้งแต่รอบก่อน — ค่าเดิมทุกวัน ไม่ได้บอกอะไรใหม่ */
+  +   '<div class="hero">'
+  +     '<div class="heroL">'
+  +       '<div class="ringWrap">'+ring(soc)
+  +         '<div class="mx">สูงสุดวันนี้ '+f(st.socMax)+'%</div>'
   +       '</div>'
+  +     '</div>'
+  //     2026-09-22 ตัดบรรทัด "+ เข้าแบต / − ออกจากแบต" ออกตามที่ Napon สั่ง
+  //     🔵 ทิศทางไม่ได้หายไปไหน — ลูกศรในไอคอนแบตกับสีของกล่องบอกอยู่แล้ว (เขียว=เข้า · แดง=ออก)
+  +     '<div class="tile t tb" style="--tc:'+bCol+'">'
+  +       '<div class="l">ชาร์จ/จ่าย</div>'
+  +       battChip(batt, soc)
+  +       '<div class="v">'+(batt===null?"—":fw(Math.abs(batt)))+'<u>W</u></div>'
+  +     '</div>'
+  +     '<div class="heroR">'
+  +       tile("ผลิตแล้ว", f(t?t.gen:null,1), "kWh", null, "self")
+  +       tile("ซื้อไฟแล้ว", f(t?t.imp:null,1), "kWh", t?("≈ ฿"+f(t.imp*S.rate,0)):null, "cost")
   +     '</div>'
   +   '</div>'
   + '</div>'
 
   + '<div class="card">'
-  +   '<h2>ไฟกำลังวิ่งไปไหน<span class="badge">ตอนนี้</span></h2>'
+  +   '<h2>ทิศทางไฟ<span class="badge">ตอนนี้</span></h2>'
   // 2026-09-22 เอาคำอธิบาย "ค่ากริดคำนวณจากสมดุล…" ออก — Napon สั่ง ให้พอดีจอมือถือไม่ต้องเลื่อน
   // 🔵 ตัดได้โดยไม่เสียความถูกต้อง เพราะข้อความนั้นพูดแบบเหมารวมทั้งที่ getData_() อ่าน wirePower
   //    จาก Deye ก่อนเสมอ (ดู meta.gridFrom) จะคำนวณจากสมดุลเฉพาะตอนไม่มีค่านั้น
@@ -753,8 +919,7 @@ function viewNow(d){
       ? tile("ไม่ซื้อไฟจากกริดเลย", f(st.gridFreeMin/60,1), "ชม.", "วัดจากมิเตอร์ราย 5 นาที (<50 W)", "good")
       : tile("แดดคลุมบ้านได้เอง", f(st.coverMin/60,1), "ชม.", "ช่วงที่ผลิต ≥ ที่ใช้", "good"))
   +     tile("ผลิตสูงสุด", fw(st.peak), "W", st.peakAt===null?"—":"เวลา "+hhmm(st.peakAt), "gen")
-  +     tile("ผลิตแล้ว", f(t?t.gen:null,1), "kWh", null, "self")
-  +     tile("ซื้อไฟแล้ว", f(t?t.imp:null,1), "kWh", t?("≈ ฿"+f(t.imp*S.rate,0)):null, "cost")
+  //      2026-09-22 "ผลิตแล้ว" กับ "ซื้อไฟแล้ว" ย้ายขึ้นไปอยู่ขวามือของการ์ด Battery แล้ว
   +   (runtime||"")
   +   '</div>'
   +   (S.cap>0?"":'<p class="note">ใส่ความจุแบต (kWh) ที่ ⚙ แล้วจะคำนวณ "แบตอยู่ได้อีกกี่ชั่วโมง" ให้</p>')
@@ -1159,7 +1324,11 @@ function load(forceFull){
           + (S.key ? "&key="+encodeURIComponent(S.key) : "")
           + "&_=" + Date.now();
   var st = document.getElementById("stamp");
-  st.textContent = since ? "กำลังเช็ควันใหม่…" : "กำลังดึงย้อนหลังทั้งหมด…";
+  // 2026-09-22 ระหว่างรอ ห้ามล้างค่าที่วาดอยู่ — บอกแค่ว่ากำลังอัปเดต + ค่าที่เห็นเก่าแค่ไหน
+  st.innerHTML = (since ? "กำลังอัปเดต…" : "กำลังดึงย้อนหลังทั้งหมด…")
+    + (S.stale ? '<br><span style="color:var(--muted)">ค่าที่เห็นเมื่อ '
+        + new Date(S.stale).toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"})
+        + '</span>' : "");
 
   // หน้าที่ GAS เสิร์ฟเองอยู่ใน iframe คนละ origin -> fetch ติด CORS
   // ใช้ google.script.run แทน (ช่องทางของ Apps Script เอง) ถ้าไม่มีค่อย fetch ตามปกติ
@@ -1174,6 +1343,42 @@ function load(forceFull){
     .catch(function(e){ onFail(e, st); });
 }
 
+/* เส้นเบา — ขอเฉพาะค่ากำลังไฟตอนนี้ (server ใช้ latest_() อย่างเดียว ไม่ลาก days_/intraday_)
+   2026-09-22 เพิ่มเพราะ ?f=json ก้อนเดียวใช้เวลา >38.9 วิ ทำให้การ์ด Battery ว่างทั้งแถบระหว่างรอ
+   🔵 ล้มก็เงียบ ไม่ต้องแจ้ง — ก้อนใหญ่ที่ยิงคู่กันอยู่จะมาทับให้เองอยู่แล้ว */
+function loadNow(){
+  var ok = function(j){ applyNow(j); }, no = function(){};
+  if (window.google && google.script && google.script.run) {
+    google.script.run.withSuccessHandler(ok).withFailureHandler(no).getBatteryData();
+    return;
+  }
+  fetch(S.api + "?f=now" + (S.key ? "&key="+encodeURIComponent(S.key) : "") + "&_=" + Date.now())
+    .then(function(r){ return r.json(); }).then(ok).catch(no);
+}
+
+/* รับได้ 2 ทรง: {ok,now:{...}} จาก ?f=now · {ok,soc,batt,gen,cons} จาก getBatteryData() */
+function applyNow(j){
+  if(!j || !j.ok || !S.d) return;
+  var n = j.now || { soc:j.soc, batt:j.batt, pv:j.gen, load:j.cons, grid:null };
+  if(n.soc===undefined && n.pv===undefined) return;
+  S.d.now = n;
+  S.stale = null;                                  // ค่าสดแล้ว เอาป้าย "ค่าเมื่อ…" ออก
+  try{ S.d = derive({ ok:true, ts:(j.ts||Date.now()),
+                      today:new Date().toISOString().slice(0,10),
+                      now:n, days:storeRows(),
+                      intraday:(S.d.intraday||{t:[],pv:[],load:[],soc:[],grid:[]}),
+                      cycle:(S.d.cycle||guessCycle()), meta:(S.d.meta||{}) }); }catch(e){}
+  render();
+}
+
+/* แคปซูลสถานะ — ที่เดียวที่ประกอบป้าย Online/Offline ให้ทุกที่เรียกใช้ตรงกัน
+   on   = ต่อ server ได้ · ตัวเลขบนจอมาจากรอบนี้
+   off  = ต่อไม่ได้ · กำลังแสดงของเก่าจากคลังในเครื่อง
+   wait = ยังไม่รู้ผล (กำลังโหลด) — 🔴 ห้ามขึ้น Online ก่อนได้ข้อมูลจริง เดี๋ยวโกหก */
+function spill(state, text){
+  return '<span class="spill '+state+'"><i></i>'+text+'</span>';
+}
+
 function onData(j, since){
   var st = document.getElementById("stamp");
   (function(){
@@ -1181,9 +1386,12 @@ function onData(j, since){
     var m = storeMerge(j.days);
     S.sync = { got:(j.days||[]).length, added:m.added, updated:m.updated, since:since, full:!!j.full };
     j.days = storeRows();                     // ทุกหน้าอ่านจากคลังในเครื่อง ไม่ใช่จาก response
+    snapSave(j);                              // 2026-09-22 จำ now+intraday ไว้ให้รอบเปิดถัดไปวาดทันที
+    S.stale = null;
     S.d = derive(j); S.err = null;
     var w = (j.meta&&j.meta.warn)||[];
     st.innerHTML =
+      spill("on","Online")+"<br>"+
       "อัปเดต "+new Date(j.ts).toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"})+
       "<br>คลัง "+storeCount()+" วัน"+(m.added?' · <b style="color:var(--good)">+'+m.added+' ใหม่</b>':'')+
       (w.length? '<br><span style="color:var(--warn)">⚠ '+w.length+' warning</span>':'');
@@ -1195,12 +1403,15 @@ function onFail(e, st){
   st = st || document.getElementById("stamp");
   (function(){
     // ต่อ server ไม่ได้ ยังเปิดดูของเก่าในคลังได้ — บอกให้ชัดว่านี่คือข้อมูลค้าง
-    if(storeCount()){
-      S.d = derive({ ok:true, ts:Date.now(), today:new Date().toISOString().slice(0,10),
-                     now:{}, days:storeRows(), intraday:{t:[],pv:[],load:[],soc:[]},
+    var sn = snapLoad();                      // 2026-09-22 ต่อเน็ตไม่ได้ ก็ยังวาดค่าล่าสุดที่จำไว้ได้
+    if(storeCount() || sn){
+      S.stale = sn ? sn.ts : null;
+      S.d = derive({ ok:true, ts:(sn?sn.ts:Date.now()), today:new Date().toISOString().slice(0,10),
+                     now:(sn?sn.now:{}), days:storeRows(),
+                     intraday:(sn&&sn.intraday)?sn.intraday:{t:[],pv:[],load:[],soc:[],grid:[]},
                      cycle:guessCycle(), meta:{warn:["offline: "+e]} });
       S.err = null; S.offline = String(e);
-      st.innerHTML = '<span style="color:var(--warn)">ออฟไลน์ — แสดงจากคลังในเครื่อง</span><br>'+storeCount()+' วัน';
+      st.innerHTML = spill("off","Offline")+'<br>แสดงจากคลังในเครื่อง<br>'+storeCount()+' วัน';
     } else {
       S.err = String(e); st.textContent = "โหลดไม่สำเร็จ";
       // 🔴 เครื่องที่ไม่เคยเปิด V3 มาก่อนจะไม่มี key เก็บไว้ ⇒ getPayload โยน "bad key"
@@ -1299,12 +1510,18 @@ document.getElementById("btnTheme").onclick = function(){
 var rt; window.addEventListener("resize", function(){ clearTimeout(rt); rt = setTimeout(render, 180); });
 
 storeLoad();                      // มีของเก่าในเครื่อง -> วาดให้ดูก่อน ไม่ต้องรอเน็ต
-if(storeCount()){
-  S.d = derive({ ok:true, ts:Date.now(), today:new Date().toISOString().slice(0,10),
-                 now:{}, days:storeRows(), intraday:{t:[],pv:[],load:[],soc:[]},
+(function(){
+  // 2026-09-22 เอา snapshot ของ "ตอนนี้" มาวาดด้วย ไม่ใช่ส่ง now:{} เข้าไปแล้วโชว์ "—" ทั้งหน้า
+  var sn = snapLoad();
+  if(!storeCount() && !sn) return;              // เครื่องใหม่จริง ๆ ไม่มีอะไรให้วาด
+  S.stale = sn ? sn.ts : null;                  // มีค่า = สิ่งที่เห็นอยู่คือค่าเก่า ยังไม่สด
+  S.d = derive({ ok:true, ts:(sn?sn.ts:Date.now()), today:new Date().toISOString().slice(0,10),
+                 now:(sn?sn.now:{}), days:storeRows(),
+                 intraday:(sn&&sn.intraday)?sn.intraday:{t:[],pv:[],load:[],soc:[],grid:[]},
                  cycle:guessCycle(), meta:{} });
   render();
-}
+})();
+loadNow();                        // เส้นเบา — ค่ากำลังไฟสดมาก่อน ไม่ต้องรอก้อนใหญ่
 load();
 setInterval(function(){ load(); }, 120000);
 if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(function(){}); }
