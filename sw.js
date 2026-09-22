@@ -1,7 +1,7 @@
 /* service worker ขั้นต่ำ + cache เปลือกแอป
    ข้อมูลย้อนหลังไม่ได้อยู่ในนี้ — อยู่ใน localStorage (ดู STORE ใน index.html)
    ที่ cache คือไฟล์หน้าเว็บ เพื่อให้เปิดแอปได้แม้ไม่มีเน็ต แล้วค่อยอ่านคลังในเครื่อง */
-var CACHE = "solar-v3-3";   // 2026-09-22 snapshot ค่า "ตอนนี้" + เส้นเบา ?f=now — ต้องขยับเลขทุกครั้งที่อัป ไม่งั้นมือถือค้างหน้าเก่า
+var CACHE = "solar-v3-4";   // 2026-09-22 v3.7.1 แถบบนใหม่ + ผังทิศทางไฟ + แคปซูลสถานะ — ต้องขยับเลขทุกครั้งที่อัป ไม่งั้นมือถือค้างหน้าเก่า
 var SHELL = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", function(e){

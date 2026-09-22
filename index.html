@@ -70,6 +70,11 @@ header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:righ
 .iconbtn{border:1px solid var(--ring);background:var(--surface);color:var(--ink-2);
   width:32px;height:32px;border-radius:10px;font-size:14px;cursor:pointer;flex-shrink:0}
 .iconbtn:active{transform:scale(.94)}
+/* 2026-09-22 ปุ่มรีเฟรช (Napon สั่ง) — หมุนระหว่างรอ ไม่งั้นกดแล้วไม่รู้ว่าติดหรือเปล่า
+   ปุ่มที่กดแล้วเงียบ = คนกดซ้ำ ซึ่งเปลืองโควตา GAS ที่ตึงอยู่แล้ว */
+.iconbtn.busy{animation:btnspin .9s linear infinite;pointer-events:none;opacity:.6}
+@keyframes btnspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){ .iconbtn.busy{animation:none} }
 
 .card{background:var(--surface);border:1px solid var(--ring);border-radius:16px;
   padding:11px 12px;margin-bottom:6px;box-shadow:var(--shadow)}
@@ -264,6 +269,7 @@ details[open]>summary::before{content:"▾ "}
 <div class="app">
   <header>
     <h1>88/318 Deye Solar</h1>
+    <button class="iconbtn" id="btnRe" title="ดึงข้อมูลใหม่">↻</button>
     <button class="iconbtn" id="btnTheme" title="สลับธีม">◐</button>
     <button class="iconbtn" id="btnCfg" title="ตั้งค่า">⚙</button>
     <div class="stamp" id="stamp"><span class="spill wait"><i></i>กำลังเชื่อมต่อ</span></div>
@@ -1317,7 +1323,18 @@ function exportCsv(){
    =================================================================== */
 /* โหลด: ขอจาก server เฉพาะวันที่เครื่องนี้ยังไม่มี แล้ว merge เข้าคลัง
    forceFull=true -> ขอใหม่ทั้งหมด (ปุ่ม "ดึงย้อนหลังทั้งหมด" ใน ⚙) */
+/* กันกดรัว — ปุ่มถูกปิดระหว่างโหลดอยู่แล้วด้วย pointer-events:none แต่ load() ยังถูกเรียก
+   จากที่อื่นได้ (auto refresh) จึงกันซ้ำที่ตัวฟังก์ชันด้วย */
+var LOADING = false;
+function setBusy(b){
+  LOADING = !!b;
+  var e = document.getElementById("btnRe");
+  if(e) e.className = "iconbtn" + (b ? " busy" : "");
+}
+
 function load(forceFull){
+  if(LOADING) return;
+  setBusy(true);
   var since = forceFull ? null : storeMax();
   var url = S.api + "?f=json"
           + (since ? "&since="+since : "")
@@ -1380,6 +1397,7 @@ function spill(state, text){
 }
 
 function onData(j, since){
+  setBusy(false);
   var st = document.getElementById("stamp");
   (function(){
     if(!j || !j.ok){ onFail((j&&j.err)||"API ตอบ ok=false"); return; }
@@ -1400,6 +1418,7 @@ function onData(j, since){
 }
 
 function onFail(e, st){
+  setBusy(false);
   st = st || document.getElementById("stamp");
   (function(){
     // ต่อ server ไม่ได้ ยังเปิดดูของเก่าในคลังได้ — บอกให้ชัดว่านี่คือข้อมูลค้าง
@@ -1498,6 +1517,7 @@ document.getElementById("btnCfg").onclick = function(){
     x.setAttribute("aria-selected", String(x.getAttribute("data-tab")===S.tab)); });
   render();
 };
+document.getElementById("btnRe").onclick = function(){ load(); };
 document.getElementById("btnTheme").onclick = function(){
   var cur = document.documentElement.getAttribute("data-theme");
   var next = cur==="dark" ? "light" : (cur==="light" ? "" : "dark");
