@@ -53,7 +53,16 @@ body{display:flex;justify-content:center;padding:0 0 env(safe-area-inset-bottom)
 
 /* ---------- chrome ---------- */
 header{display:flex;align-items:center;gap:10px;padding:2px 2px 7px}
-header h1{font-size:14px;font-weight:600;margin:0;letter-spacing:-.01em;white-space:nowrap}
+/* 2026-09-23 หัวจอแบบ A (Napon เลือก): กล่องไอคอนแดด + เลขบ้าน 2 บรรทัด
+   สีไอคอนใช้ --solar ตัวเดียวกับ "แดด" ในผังไฟ ⇒ ไม่เพิ่มสีใหม่เข้าระบบ · สูง 34px ≈ ปุ่ม 32px ไม่ดันการ์ดลง */
+header h1{margin:0;display:flex;align-items:center;gap:9px;white-space:nowrap;min-width:0}
+header .logo{width:34px;height:34px;border-radius:11px;flex-shrink:0;display:grid;place-items:center;
+  color:var(--solar);background:color-mix(in srgb,var(--solar) 16%,transparent);
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--solar) 28%,transparent)}
+header .logo svg{width:20px;height:20px}
+header .bt{display:flex;flex-direction:column;line-height:1.05}
+header .bt b{font-size:17px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+header .bt small{font-size:9.5px;font-weight:600;letter-spacing:.16em;color:var(--muted);margin-top:3px}
 header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:right;line-height:1.35}
 /* 2026-09-22 แคปซูลสถานะ (Napon สั่ง) — เดิมบอกออฟไลน์ด้วยข้อความสีส้มลอย ๆ อ่านผ่านตาได้ง่าย
    จุดกลม + พื้นสีอ่อน ทำให้เห็นสถานะก่อนอ่านตัวหนังสือ · จุดกะพริบเฉพาะตอน Online */
@@ -277,7 +286,12 @@ details[open]>summary::before{content:"▾ "}
 <body>
 <div class="app">
   <header>
-    <h1>88/318 Deye Solar</h1>
+    <h1 aria-label="88/318 Deye Solar">
+      <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none"/>
+        <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></span>
+      <span class="bt"><b>88/318</b><small>DEYE SOLAR</small></span>
+    </h1>
     <button class="iconbtn" id="btnRe" title="ดึงข้อมูลใหม่">↻</button>
     <button class="iconbtn" id="btnTheme" title="สลับธีม">◐</button>
     <!-- 2026-09-22 ถอดปุ่ม ⚙ ออกจากหัวจอ — Napon สั่ง เพราะลูกชายใช้เครื่องนี้ด้วย
