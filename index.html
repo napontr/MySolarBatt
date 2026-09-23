@@ -390,7 +390,7 @@ function snapLoad(){
   try{
     var s = JSON.parse(localStorage.getItem("solar3_snap")||"null");
     if(!s) return null;
-    if(s.day !== new Date().toISOString().slice(0,10)) return null;   // ข้ามวันแล้ว ทิ้ง
+    if(s.day !== localDay()) return null;   // ข้ามวันแล้ว ทิ้ง
     return s;
   }catch(e){ return null; }
 }
@@ -404,6 +404,9 @@ function f(v, dec){ if(v===null||v===undefined||isNaN(v)) return "—";
 function fw(v){ return v===null||v===undefined||isNaN(v) ? "—" : f(Math.round(v)); }
 function esc(s){ return String(s).replace(/[&<>"]/g,function(c){
   return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+/* 2026-09-23 วันที่ตามเวลาเครื่อง (ไทย) — เดิมใช้ toISOString() ซึ่งเป็น UTC
+   ⇒ 00:00–06:59 เวลาไทยได้วันที่ของเมื่อวาน การ์ด "ผลิตแล้ว/ซื้อไฟแล้ว" เลยหยิบแถวเมื่อวานมาโชว์ */
+function localDay(){ var n=new Date(); return n.getFullYear()+"-"+("0"+(n.getMonth()+1)).slice(-2)+"-"+("0"+n.getDate()).slice(-2); }
 function hhmm(mins){ var h=Math.floor(mins/60), m=mins%60; return ("0"+h).slice(-2)+":"+("0"+m).slice(-2); }
 function dLabel(iso){ var p=String(iso).split("-"); return p.length===3 ? (+p[2])+"/"+(+p[1]) : iso; }
 function cssv(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
@@ -1479,7 +1482,7 @@ function applyNow(j){
   S.d.now = n;
   S.stale = null;                                  // ค่าสดแล้ว เอาป้าย "ค่าเมื่อ…" ออก
   try{ S.d = derive({ ok:true, ts:(j.ts||Date.now()),
-                      today:new Date().toISOString().slice(0,10),
+                      today:localDay(),
                       now:n, days:storeRows(),
                       intraday:(S.d.intraday||{t:[],pv:[],load:[],soc:[],grid:[]}),
                       cycle:(S.d.cycle||guessCycle()), meta:(S.d.meta||{}) }); }catch(e){}
@@ -1492,6 +1495,38 @@ function applyNow(j){
    wait = ยังไม่รู้ผล (กำลังโหลด) — 🔴 ห้ามขึ้น Online ก่อนได้ข้อมูลจริง เดี๋ยวโกหก */
 function spill(state, text){
   return '<span class="spill '+state+'"><i></i>'+text+'</span>';
+}
+
+/* -------------------------------------------------------------------
+   ซ่อมคลังในเครื่องอัตโนมัติ (เพิ่ม 2026-09-22 · Napon สั่ง)
+
+   🔴 ปัญหาที่แก้: sync ปกติขอ `?f=json&since=<วันล่าสุดที่เครื่องนี้มี>`
+      ⇒ คลังในเครื่อง **โตไปข้างหน้าได้ทางเดียว ไม่มีทางงอกย้อนหลัง**
+      เครื่องที่เก็บไว้ 46 วันตั้งแต่ยุคก่อนมี Sheet จะค้างที่ 46 ตลอดไป ทั้งที่ server มี 234 วัน
+      — เดิมต้องมีคนจำได้ว่าต้องเข้า ?cfg=1 ไปกด "ดึงย้อนหลังทั้งหมดใหม่" เองทุกเครื่อง
+
+   🔑 สัญญาณที่ใช้: `meta.archiveDays` ฝั่ง server นับจาก **คลังเต็ม ก่อนถูกตัดด้วย since**
+      (🟢 Code.gs ~บรรทัด 380: meta.archiveDays = all.length แล้วค่อย filter เป็น rows)
+      ⇒ แม้รอบที่ขอแบบ incremental ก็ยังรู้ยอดจริงของ server
+
+   กันยิงซ้ำ/กันลูป 3 ชั้น:
+     1. `since` ว่าง = รอบนี้เป็น full pull อยู่แล้ว → ออกทันที ⇒ load(true) ไม่เรียกตัวเองวน
+     2. flag เก็บเป็น "ยอด server ที่เคยลองซ่อม" ไม่ใช่ boolean
+        ⇒ ยอดเดิม = ไม่ยิงซ้ำ · ยอดขยับ (มีวันใหม่) แล้ว**ยังขาดอยู่จริง** = ยอมให้ลองใหม่ วันละครั้ง
+        🔑 ถ้าใช้ boolean แล้วรอบซ่อมล้มกลางทาง เครื่องนั้นจะไม่มีวันซ่อมอีกเลย
+     3. ห่างกันไม่เกิน 5 วันถือว่าปกติ ไม่ซ่อม — กันวันคาบเกี่ยว/เวลาไม่ตรง
+   ------------------------------------------------------------------- */
+function selfHeal(j, since){
+  if(!since) return false;                             // รอบนี้ full pull อยู่แล้ว
+  var srv = +(((j||{}).meta||{}).archiveDays) || 0;
+  if(!srv) return false;                               // server ไม่ได้บอกยอด = ไม่มีอะไรให้เทียบ ห้ามเดา
+  var gap = srv - storeCount();
+  if(gap <= 5) return false;
+  if(ls("heal","") === String(srv)) return false;      // ยอดนี้เคยลองซ่อมไปแล้ว
+  save("heal", String(srv));
+  S.heal = { srv:srv, gap:gap, at:Date.now() };
+  load(true);                                          // ขอใหม่ทั้งหมด → since=null → selfHeal ไม่ทำงานซ้ำ
+  return true;
 }
 
 function onData(j, since){
@@ -1512,6 +1547,12 @@ function onData(j, since){
       "<br>คลัง "+storeCount()+" วัน"+(m.added?' · <b style="color:var(--good)">+'+m.added+' ใหม่</b>':'')+
       (w.length? '<br><span style="color:var(--warn)">⚠ '+w.length+' warning</span>':'');
     render(); fillDiag();
+    // 2026-09-22 เช็คท้ายสุด: คลังในเครื่องตามหลัง server อยู่ไหม — ตามหลังมาก = ดึงใหม่ทั้งหมดให้เอง
+    // 🔵 วางไว้หลัง render() เพื่อให้ผู้ใช้เห็นของเก่าก่อน แล้วค่อยรอรอบใหญ่ ไม่ใช่จอว่างตอนรอ
+    if(selfHeal(j, since)){
+      st.innerHTML += '<br><span style="color:var(--muted)">ซ่อมคลังอัตโนมัติ — server มี '
+        + S.heal.srv + ' วัน เครื่องนี้ขาด ' + S.heal.gap + '</span>';
+    }
   })();
 }
 
@@ -1523,7 +1564,7 @@ function onFail(e, st){
     var sn = snapLoad();                      // 2026-09-22 ต่อเน็ตไม่ได้ ก็ยังวาดค่าล่าสุดที่จำไว้ได้
     if(storeCount() || sn){
       S.stale = sn ? sn.ts : null;
-      S.d = derive({ ok:true, ts:(sn?sn.ts:Date.now()), today:new Date().toISOString().slice(0,10),
+      S.d = derive({ ok:true, ts:(sn?sn.ts:Date.now()), today:localDay(),
                      now:(sn?sn.now:{}), days:storeRows(),
                      intraday:(sn&&sn.intraday)?sn.intraday:{t:[],pv:[],load:[],soc:[],grid:[]},
                      cycle:guessCycle(), meta:{warn:["offline: "+e]} });
@@ -1564,6 +1605,9 @@ function fillDiag(){
     "<br>ฝั่ง server มี "+esc(m.archiveDays||0)+" วัน ("+esc(m.archiveFirst||"—")+" → "+esc(m.archiveLast||"—")+")"+
     "<br>รอบล่าสุดขอไป since=<b>"+esc(s.since||"(ทั้งหมด)")+"</b> ได้ "+(s.got||0)+" วัน · ใหม่ "+(s.added||0)+
     "<br>คลังในเครื่อง "+storeCount()+" วัน · จุดราย 5 นาทีวันนี้ "+(S.d.intraday.t||[]).length+
+    // 2026-09-22 สถานะตัวซ่อมคลังอัตโนมัติ — ดูได้ว่ามันเคยทำงานหรือยัง ที่ยอดเท่าไหร่
+    "<br>ซ่อมคลังอัตโนมัติ: "+(S.heal ? "<b>ทำงานรอบนี้</b> (ขาด "+S.heal.gap+" วัน)"
+        : (ls("heal","") ? "เคยทำที่ยอด "+esc(ls("heal",""))+" วัน" : "ยังไม่เคยทำงาน"))+
     "<br>รอบบิล: "+esc((S.d.cycle||{}).start)+" → "+esc((S.d.cycle||{}).end)+
     (S.storeErr? '<br><span style="color:var(--crit)">'+esc(S.storeErr)+'</span>':'')+
     ((m.warn&&m.warn.length)? '<br><span style="color:var(--warn)">'+esc(m.warn.join(" | "))+'</span>':'');
@@ -1598,6 +1642,7 @@ function bindCfg(){
   document.getElementById("btnWipe").onclick = function(){
     if(!confirm("ล้างข้อมูลย้อนหลังในเครื่องนี้ทั้งหมด? (ของบน server ไม่ถูกแตะ)")) return;
     try{ localStorage.removeItem("solar3_days"); }catch(e){}
+    save("heal","");                       // 2026-09-22 ล้างคลัง = ล้าง flag ตัวซ่อมด้วย ไม่งั้นมันคิดว่าซ่อมยอดนี้ไปแล้ว
     STORE.map = {}; out.textContent = "ล้างแล้ว"; load(true);
   };
   fillDiag();
@@ -1643,7 +1688,7 @@ storeLoad();                      // มีของเก่าในเคร�
   var sn = snapLoad();
   if(!storeCount() && !sn) return;              // เครื่องใหม่จริง ๆ ไม่มีอะไรให้วาด
   S.stale = sn ? sn.ts : null;                  // มีค่า = สิ่งที่เห็นอยู่คือค่าเก่า ยังไม่สด
-  S.d = derive({ ok:true, ts:(sn?sn.ts:Date.now()), today:new Date().toISOString().slice(0,10),
+  S.d = derive({ ok:true, ts:(sn?sn.ts:Date.now()), today:localDay(),
                  now:(sn?sn.now:{}), days:storeRows(),
                  intraday:(sn&&sn.intraday)?sn.intraday:{t:[],pv:[],load:[],soc:[],grid:[]},
                  cycle:guessCycle(), meta:{} });
