@@ -371,8 +371,18 @@ function storeMerge(rows){
   if(added||upd){ STORE.dirty = true; storeSave(); }
   return { added:added, updated:upd };
 }
+/* 2026-09-23 เขียนแบบ "รวม" ไม่ใช่ "ทับทั้งก้อน"
+   🔴 บั๊กที่เจอ: หน้าต่าง PWA รุ่นเก่าเปิดค้าง (ในหน่วยความจำมี 47 วัน) รีเฟรชทุก 2 นาทีแล้ว setItem ทั้งก้อน
+      ⇒ คลัง 235 วันที่เพิ่งซ่อมถูกทับกลับเป็น 47 (🟢 ตรวจ 16:23: solar3_heal="235" แต่ solar3_days มี 47)
+   ✅ ใหม่: อ่านของที่อยู่ในเครื่องก่อน วันที่หน้าต่างนี้ไม่มีแต่ในเครื่องมี = เก็บไว้ · วันที่ซ้ำ = ค่าของหน้าต่างนี้ชนะ (ใหม่กว่า)
+      ⇒ หน้าต่างไหนก็ทำให้คลัง "หด" ไม่ได้ และหน้าต่างนี้ได้วันที่หน้าต่างอื่นดึงมาไปด้วย
+   🔑 กันได้เฉพาะหน้าต่างที่รันโค้ดรุ่นนี้ขึ้นไป — หน้าต่างรุ่นเก่าที่เปิดค้างยังทับได้จนกว่าจะปิด */
 function storeSave(){
-  try{ localStorage.setItem("solar3_days", JSON.stringify(STORE.map)); STORE.dirty=false; }
+  try{
+    var raw = localStorage.getItem("solar3_days"), cur = raw ? JSON.parse(raw) : {};
+    for(var d in cur){ if(STORE.map[d]===undefined) STORE.map[d] = cur[d]; }
+    localStorage.setItem("solar3_days", JSON.stringify(STORE.map)); STORE.dirty=false;
+  }
   catch(e){ S.storeErr = "เก็บลงเครื่องไม่ได้: "+e; }
 }
 function storeRows(){
@@ -977,16 +987,8 @@ function viewNow(d){
   // 2026-09-22 ตัด bLbl/bSign ("+ เข้าแบต" / "− ออกจากแบต") ทิ้ง — Napon สั่งเอาบรรทัดนั้นออก
   // เหลือ bCol ตัวเดียวที่ยังใช้ ⇒ ไม่ปล่อยตัวแปรตายค้างไว้ในไฟล์
 
-  // เวลาที่แบตอยู่ได้ — ต้องรู้ความจุแบตก่อน ไม่รู้ = ไม่เดา
-  var runtime = "";
-  if(S.cap>0 && batt!==null && batt>20 && soc!==null){
-    var usable = (soc-20)/100*S.cap;                  // กันไว้ 20% ตามอายุแบต
-    var hrs = usable/(batt/1000);
-    runtime = tile("แบตอยู่ได้อีก", f(Math.floor(hrs))+":"+("0"+Math.round((hrs%1)*60)).slice(-2), "ชม.", "ที่โหลดตอนนี้ · เหลือถึง 20%", "good");
-  } else if(S.cap>0 && batt!==null && batt<-20 && soc!==null){
-    var need=(100-soc)/100*S.cap, h2=need/(-batt/1000);
-    runtime = tile("เต็มในอีก", f(Math.floor(h2))+":"+("0"+Math.round((h2%1)*60)).slice(-2), "ชม.", "ที่อัตราชาร์จตอนนี้", "good");
-  }
+  /* 2026-09-23 ถอดการ์ด "แบตอยู่ได้อีก / เต็มในอีก" (Napon สั่ง) → แทนด้วย "แบตถึง 90%" (soc90Tile) */
+  var eta90 = soc90Tile(d._intra, soc);
 
   // ป้าย/ทิศของกริดย้ายไปอยู่ใน pflow() แล้ว — อ่านจากเครื่องหมายของ grid ที่เดียว ไม่ให้แตกเป็น 2 ที่
 
@@ -1034,17 +1036,45 @@ function viewNow(d){
   + '</div>'
 
   + '<div class="card">'
-  +   '<h2>วันนี้ถึงตอนนี้</h2>'
+  //      2026-09-23 เปลี่ยนหัวจาก "วันนี้ถึงตอนนี้" → "สรุปวันนี้" (Napon ขอคำที่เข้าใจง่ายขึ้น)
+  +   '<h2>สรุปวันนี้</h2>'
   +   '<div class="tiles">'
   /*      2026-09-22 Napon ตัดออกทั้ง "ไม่ซื้อไฟจากกริดเลย" และ "แดดคลุมบ้านได้เอง"
           (อันหลังลองใส่แล้วเขาบอกว่างง) ⇒ ช่องนี้ไม่มีการ์ดแล้ว
           🔵 st.gridFreeMin / st.coverMin ยังคำนวณอยู่ใน derive() เอากลับมาแสดงได้ทุกเมื่อ */
   +     tile("ผลิตสูงสุด", fw(st.peak), "W", st.peakAt===null?"—":"เวลา "+hhmm(st.peakAt), "gen")
   //      2026-09-22 "ผลิตแล้ว" กับ "ซื้อไฟแล้ว" ย้ายขึ้นไปอยู่ขวามือของการ์ด Battery แล้ว
-  +   (runtime||"")
+  +     eta90
   +   '</div>'
-  +   (S.cap>0?"":'<p class="note">ใส่ความจุแบต (kWh) ที่หน้าตั้งค่า (เปิดด้วย <code>?cfg=1</code>) แล้วจะคำนวณ "แบตอยู่ได้อีกกี่ชั่วโมง" ให้</p>')
   + '</div>';
+}
+
+/* 2026-09-23 การ์ด "แบตถึง 90%" (Napon สั่ง)
+   หลักคำนวณ: อัตรา % ที่เพิ่มขึ้นจริงใน 60 นาทีล่าสุด จาก intraday ราย 5 นาที
+   🔵 ไม่ใช้กำลังชาร์จ ณ วินาทีนั้น — แกว่งหนักตามเมฆ (เคย 328 W → "เต็มในอีก 12:54 ชม.")
+      และไม่ต้องรู้ความจุแบต (S.cap) ด้วย
+   ผล 4 แบบ: ถึงแล้ว (บอกเวลาที่ถึง) · ประมาณเวลา · วันนี้ไม่น่าถึง (เลย 18:30) · ไม่ได้ชาร์จ */
+var SOC_TARGET = 90, SUN_END = 18*60+30;
+function soc90Tile(it, socNow){
+  var L = "แบตถึง "+SOC_TARGET+"%";
+  it = it || {};
+  var T = it.t || [], P = it.soc || [], pts = [];
+  for(var i=0;i<T.length;i++) if(P[i]!==null && P[i]!==undefined) pts.push([T[i], P[i]]);
+  // ถึงแล้ว — หาเวลาแรกที่แตะ 90% ในวันนี้
+  var hit = null;
+  for(var j=0;j<pts.length;j++) if(pts[j][1]>=SOC_TARGET){ hit = pts[j][0]; break; }
+  if(hit!==null || (socNow!==null && socNow>=SOC_TARGET))
+    return tile(L, hit!==null ? hhmm(hit) : "แล้ว", hit!==null ? "น." : "", "ถึงแล้ววันนี้", "good");
+  if(pts.length<2) return tile(L, "—", "", "ยังไม่มีข้อมูลพอ", "good");
+  var last = pts[pts.length-1], first = null;
+  for(var k=pts.length-1;k>=0;k--){ if(last[0]-pts[k][0] <= 60) first = pts[k]; else break; }
+  var span = first ? last[0]-first[0] : 0;
+  var slope = span>=20 ? (last[1]-first[1])/span : 0;          // % ต่อนาที
+  var cur = (socNow!==null ? socNow : last[1]);
+  if(!(slope>0.005)) return tile(L, "—", "", "ตอนนี้ไม่ได้ชาร์จ", "good");
+  var eta = last[0] + (SOC_TARGET-cur)/slope;
+  if(eta > SUN_END) return tile(L, "ไม่ถึง", "", "วันนี้ไม่น่าถึง · ตามอัตรา 1 ชม.ล่าสุด", "good");
+  return tile(L, "~"+hhmm(Math.round(eta)), "น.", "ประมาณจากอัตรา 1 ชม.ล่าสุด", "good");
 }
 
 /* ---------- 4b) วันนี้ ---------- */
@@ -1536,8 +1566,11 @@ function selfHeal(j, since){
   if(!srv) return false;                               // server ไม่ได้บอกยอด = ไม่มีอะไรให้เทียบ ห้ามเดา
   var gap = srv - storeCount();
   if(gap <= 5) return false;
-  if(ls("heal","") === String(srv)) return false;      // ยอดนี้เคยลองซ่อมไปแล้ว
-  save("heal", String(srv));
+  /* 2026-09-23 flag = "ยอด server@วันที่" — เดิมเก็บแค่ยอด ⇒ คลังถูกทับหดลงหลังซ่อม (ยอด server เท่าเดิม)
+     ตัวซ่อมจะไม่ยอมลองอีกจนกว่า server จะมีวันเพิ่ม · ใหม่: ลองได้วันละครั้งต่อยอด ยังกันลูปในวันเดียวกันได้เหมือนเดิม */
+  var tag = srv + "@" + localDay();
+  if(ls("heal","") === tag) return false;              // วันนี้ลองซ่อมที่ยอดนี้ไปแล้ว
+  save("heal", tag);
   S.heal = { srv:srv, gap:gap, at:Date.now() };
   load(true);                                          // ขอใหม่ทั้งหมด → since=null → selfHeal ไม่ทำงานซ้ำ
   return true;
