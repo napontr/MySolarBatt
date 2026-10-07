@@ -365,7 +365,9 @@ function storeLoad(){
    2. วันที่มีอยู่แล้ว = แก้ได้เฉพาะ WRITE_BACK_DAYS วันล่าสุด · เก่ากว่านั้นไม่แตะ
    3. ค่าที่มีอยู่แล้วห้ามลด — เอาค่ามากกว่ารายช่อง (kWh รายวันเป็นยอดสะสม ลดลง = ของใหม่ผิด)
    🔴 บั๊กที่กัน: server ส่งแถวเมื่อวานเป็นยอดตี 1 (เกือบ 0) ช่วง 00:00–01:00 แล้วทับยอดจริงในคลัง
-   full = รอบดึงทั้งหมด (กดเองใน ?cfg=1 / ซ่อมคลังอัตโนมัติ) — ข้ามข้อ 2 ได้ แต่ข้อ 3 ยังบังคับ ⇒ ทำได้แค่ "ยกค่าขึ้น" */
+   🔑 รอบ "ดึงทั้งหมด" (?cfg=1 / ซ่อมคลังอัตโนมัติ) ก็อยู่ใต้กติกาเดียวกัน — เพิ่มได้แค่วันที่ยังไม่มี ไม่ replace ของเก่า
+   repairFrom = ข้อยกเว้นเดียว: รอบซ่อมครั้งเดียว (REPAIR_FROM) ขยายข้อ 2 ไปถึงวันนั้น · ข้อ 3 ยังบังคับ ⇒ ทำได้แค่ "ยกค่าขึ้น" */
+var REPAIR_FROM = "2026-09-23";               // วันแรกที่คลังถูกยอดตี 1 ทับ (🟢 ตรวจ localStorage 8 ต.ค. 2026)
 var WRITE_BACK_DAYS = 5;
 function isoBack(n){
   var x = new Date(); x.setDate(x.getDate()-n);
@@ -382,14 +384,15 @@ function keepMax(oldV, newV){
   }
   return chg ? out : null;                    // null = ไม่มีอะไรเปลี่ยน
 }
-function storeMerge(rows, full){
+function storeMerge(rows, repairFrom){
   var added = 0, upd = 0, floor = isoBack(WRITE_BACK_DAYS);
+  if(repairFrom && repairFrom < floor) floor = repairFrom;
   (rows||[]).forEach(function(r){
     var d = r[0]; if(!d) return;
     var v = [r[1],r[2],r[3],r[4],r[5],r[6]];
     var old = STORE.map[d];
     if(old===undefined){ STORE.map[d] = v; added++; return; }
-    if(!full && d < floor) return;            // เก่ากว่า 5 วัน ไม่แตะ
+    if(d < floor) return;                     // เก่ากว่า 5 วัน (หรือเก่ากว่าช่วงซ่อม) ไม่แตะ
     var nv = keepMax(old, v);
     if(nv){ STORE.map[d] = nv; upd++; }
   });
@@ -1539,10 +1542,10 @@ function setBusy(b){
   if(e) e.className = "iconbtn" + (b ? " busy" : "");
 }
 
-function load(forceFull){
+function load(forceFull, repairFrom){
   if(LOADING) return;
   setBusy(true);
-  var since = forceFull ? null : storeMax();
+  var since = forceFull ? null : (repairFrom || storeMax());
   var url = S.api + "?f=json"
           + (since ? "&since="+since : "")
           + (S.key ? "&key="+encodeURIComponent(S.key) : "")
@@ -1558,12 +1561,12 @@ function load(forceFull){
   // ใช้ google.script.run แทน (ช่องทางของ Apps Script เอง) ถ้าไม่มีค่อย fetch ตามปกติ
   if (window.google && google.script && google.script.run) {
     google.script.run
-      .withSuccessHandler(function(j){ onData(j, since); })
+      .withSuccessHandler(function(j){ onData(j, since, repairFrom); })
       .withFailureHandler(function(e){ onFail(e, st); })
       .getPayload(since || "", S.key || "");
     return;
   }
-  fetch(url).then(function(r){ return r.json(); }).then(function(j){ onData(j, since); })
+  fetch(url).then(function(r){ return r.json(); }).then(function(j){ onData(j, since, repairFrom); })
     .catch(function(e){ onFail(e, st); });
 }
 
@@ -1638,12 +1641,13 @@ function selfHeal(j, since){
   return true;
 }
 
-function onData(j, since){
+function onData(j, since, repairFrom){
   setBusy(false);
   var st = document.getElementById("stamp");
   (function(){
     if(!j || !j.ok){ onFail((j&&j.err)||"API ตอบ ok=false"); return; }
-    var m = storeMerge(j.days, !!j.full);
+    var m = storeMerge(j.days, repairFrom);
+    if(repairFrom) save("fix1008","2");       // จำเมื่อรอบซ่อมสำเร็จเท่านั้น — ล้มกลางทาง รอบรีเฟรชถัดไปลองใหม่
     S.sync = { got:(j.days||[]).length, added:m.added, updated:m.updated, since:since, full:!!j.full };
     j.days = storeRows();                     // ทุกหน้าอ่านจากคลังในเครื่อง ไม่ใช่จาก response
     snapSave(j);                              // 2026-09-22 จำ now+intraday ไว้ให้รอบเปิดถัดไปวาดทันที
@@ -1659,11 +1663,11 @@ function onData(j, since){
     // 2026-09-22 เช็คท้ายสุด: คลังในเครื่องตามหลัง server อยู่ไหม — ตามหลังมาก = ดึงใหม่ทั้งหมดให้เอง
     // 🔵 วางไว้หลัง render() เพื่อให้ผู้ใช้เห็นของเก่าก่อน แล้วค่อยรอรอบใหญ่ ไม่ใช่จอว่างตอนรอ
     /* 2026-10-08 ซ่อมครั้งเดียวต่อเครื่อง: วันที่ถูกยอดตี 1 ทับไว้ตั้งแต่ 23 ก.ย. เก่ากว่า 5 วันแล้ว รอบปกติแตะไม่ได้
-       ⇒ ดึงทั้งหมด 1 รอบ (storeMerge โหมด full = ยกค่าขึ้นได้อย่างเดียว ลดไม่ได้) แล้วจำ flag ไม่ทำซ้ำ */
-    if(since && ls("fix1008","") !== "1"){
-      save("fix1008","1");
-      st.innerHTML += '<br><span style="color:var(--muted)">ซ่อมยอดรายวันที่หาย (ครั้งเดียว)…</span>';
-      load(true);
+       ⇒ ขอ server เฉพาะตั้งแต่ REPAIR_FROM 1 รอบ (ยกค่าขึ้นได้อย่างเดียว · วันก่อน REPAIR_FROM ไม่แตะ) แล้วจำ flag ไม่ทำซ้ำ
+       flag "2" ถูกเขียนใน onData ตอนรอบซ่อมสำเร็จ ⇒ รอบซ่อมเองไม่เข้าบล็อกนี้ซ้ำ = ไม่ลูป */
+    if(since && !repairFrom && ls("fix1008","") !== "2"){
+      st.innerHTML += '<br><span style="color:var(--muted)">ซ่อมยอดรายวันตั้งแต่ '+REPAIR_FROM+' (ครั้งเดียว)…</span>';
+      load(false, REPAIR_FROM);
       return;
     }
     if(selfHeal(j, since)){
