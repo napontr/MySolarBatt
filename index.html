@@ -360,13 +360,38 @@ function storeLoad(){
     STORE.map = raw ? JSON.parse(raw) : {};
   }catch(e){ STORE.map = {}; }
 }
-function storeMerge(rows){
-  var added = 0, upd = 0;
+/* 2026-10-08 กติกาเขียนคลัง (Napon สั่ง) — กันข้อมูลเก่าพัง
+   1. วันที่ยังไม่มีในคลัง = เพิ่มได้เสมอ
+   2. วันที่มีอยู่แล้ว = แก้ได้เฉพาะ WRITE_BACK_DAYS วันล่าสุด · เก่ากว่านั้นไม่แตะ
+   3. ค่าที่มีอยู่แล้วห้ามลด — เอาค่ามากกว่ารายช่อง (kWh รายวันเป็นยอดสะสม ลดลง = ของใหม่ผิด)
+   🔴 บั๊กที่กัน: server ส่งแถวเมื่อวานเป็นยอดตี 1 (เกือบ 0) ช่วง 00:00–01:00 แล้วทับยอดจริงในคลัง
+   full = รอบดึงทั้งหมด (กดเองใน ?cfg=1 / ซ่อมคลังอัตโนมัติ) — ข้ามข้อ 2 ได้ แต่ข้อ 3 ยังบังคับ ⇒ ทำได้แค่ "ยกค่าขึ้น" */
+var WRITE_BACK_DAYS = 5;
+function isoBack(n){
+  var x = new Date(); x.setDate(x.getDate()-n);
+  return x.getFullYear()+"-"+("0"+(x.getMonth()+1)).slice(-2)+"-"+("0"+x.getDate()).slice(-2);
+}
+function keepMax(oldV, newV){
+  var out = [], chg = false;
+  for(var i=0;i<6;i++){
+    var a = oldV ? oldV[i] : null, b = newV[i];
+    var an = (typeof a==="number" && !isNaN(a)), bn = (typeof b==="number" && !isNaN(b));
+    var v = (an && bn) ? Math.max(a,b) : (an ? a : (bn ? b : (a===undefined?null:a)));
+    if(v !== a) chg = true;
+    out.push(v);
+  }
+  return chg ? out : null;                    // null = ไม่มีอะไรเปลี่ยน
+}
+function storeMerge(rows, full){
+  var added = 0, upd = 0, floor = isoBack(WRITE_BACK_DAYS);
   (rows||[]).forEach(function(r){
     var d = r[0]; if(!d) return;
     var v = [r[1],r[2],r[3],r[4],r[5],r[6]];
-    if(STORE.map[d]===undefined) added++; else upd++;
-    STORE.map[d] = v;
+    var old = STORE.map[d];
+    if(old===undefined){ STORE.map[d] = v; added++; return; }
+    if(!full && d < floor) return;            // เก่ากว่า 5 วัน ไม่แตะ
+    var nv = keepMax(old, v);
+    if(nv){ STORE.map[d] = nv; upd++; }
   });
   if(added||upd){ STORE.dirty = true; storeSave(); }
   return { added:added, updated:upd };
@@ -1618,7 +1643,7 @@ function onData(j, since){
   var st = document.getElementById("stamp");
   (function(){
     if(!j || !j.ok){ onFail((j&&j.err)||"API ตอบ ok=false"); return; }
-    var m = storeMerge(j.days);
+    var m = storeMerge(j.days, !!j.full);
     S.sync = { got:(j.days||[]).length, added:m.added, updated:m.updated, since:since, full:!!j.full };
     j.days = storeRows();                     // ทุกหน้าอ่านจากคลังในเครื่อง ไม่ใช่จาก response
     snapSave(j);                              // 2026-09-22 จำ now+intraday ไว้ให้รอบเปิดถัดไปวาดทันที
@@ -1633,6 +1658,14 @@ function onData(j, since){
     render(); fillDiag();
     // 2026-09-22 เช็คท้ายสุด: คลังในเครื่องตามหลัง server อยู่ไหม — ตามหลังมาก = ดึงใหม่ทั้งหมดให้เอง
     // 🔵 วางไว้หลัง render() เพื่อให้ผู้ใช้เห็นของเก่าก่อน แล้วค่อยรอรอบใหญ่ ไม่ใช่จอว่างตอนรอ
+    /* 2026-10-08 ซ่อมครั้งเดียวต่อเครื่อง: วันที่ถูกยอดตี 1 ทับไว้ตั้งแต่ 23 ก.ย. เก่ากว่า 5 วันแล้ว รอบปกติแตะไม่ได้
+       ⇒ ดึงทั้งหมด 1 รอบ (storeMerge โหมด full = ยกค่าขึ้นได้อย่างเดียว ลดไม่ได้) แล้วจำ flag ไม่ทำซ้ำ */
+    if(since && ls("fix1008","") !== "1"){
+      save("fix1008","1");
+      st.innerHTML += '<br><span style="color:var(--muted)">ซ่อมยอดรายวันที่หาย (ครั้งเดียว)…</span>';
+      load(true);
+      return;
+    }
     if(selfHeal(j, since)){
       st.innerHTML += '<br><span style="color:var(--muted)">ซ่อมคลังอัตโนมัติ — server มี '
         + S.heal.srv + ' วัน เครื่องนี้ขาด ' + S.heal.gap + '</span>';
