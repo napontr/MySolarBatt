@@ -368,6 +368,18 @@ function storeLoad(){
    🔑 รอบ "ดึงทั้งหมด" (?cfg=1 / ซ่อมคลังอัตโนมัติ) ก็อยู่ใต้กติกาเดียวกัน — เพิ่มได้แค่วันที่ยังไม่มี ไม่ replace ของเก่า
    repairFrom = ข้อยกเว้นเดียว: รอบซ่อมครั้งเดียว (REPAIR_FROM) ขยายข้อ 2 ไปถึงวันนั้น · ข้อ 3 ยังบังคับ ⇒ ทำได้แค่ "ยกค่าขึ้น" */
 var REPAIR_FROM = "2026-09-23";               // วันแรกที่คลังถูกยอดตี 1 ทับ (🟢 ตรวจ localStorage 8 ต.ค. 2026)
+/* คลังยังมี "รอยยอดตี 1" ในช่วงซ่อมไหม — ผลิต ~0 และใช้ < 4 kWh ทั้งวัน (วันปกติใช้ 20+ kWh)
+   ดูเฉพาะวันที่เก่ากว่า 5 วัน เพราะ 5 วันล่าสุดรอบปกติยกค่าให้เองอยู่แล้ว
+   🔑 ใช้อาการในคลังเป็นตัวสั่งซ่อม ไม่ใช่ flag "เคยซ่อมแล้ว" — หน้าต่างรุ่นเก่าที่เปิดค้างทับของที่ซ่อมกลับได้ */
+function needRepair(){
+  var floor = isoBack(WRITE_BACK_DAYS);
+  for(var d in STORE.map){
+    if(d < REPAIR_FROM || d >= floor) continue;
+    var v = STORE.map[d];
+    if(v && (v[0]===null || v[0] <= 0.05) && typeof v[1]==="number" && v[1] < 4) return true;
+  }
+  return false;
+}
 var WRITE_BACK_DAYS = 5;
 function isoBack(n){
   var x = new Date(); x.setDate(x.getDate()-n);
@@ -408,7 +420,12 @@ function storeMerge(rows, repairFrom){
 function storeSave(){
   try{
     var raw = localStorage.getItem("solar3_days"), cur = raw ? JSON.parse(raw) : {};
-    for(var d in cur){ if(STORE.map[d]===undefined) STORE.map[d] = cur[d]; }
+    /* 2026-10-08 วันที่ซ้ำ: เดิม "ค่าของหน้าต่างนี้ชนะ" ⇒ หน้าต่างที่ถือค่าเก่าในหน่วยความจำทับของที่หน้าต่างอื่นเพิ่งซ่อม
+       (🟢 8 ต.ค. 01:0x: ซ่อม 23 ก.ย. เป็น 18.7 แล้ว ถูกหน้าต่างที่เปิดค้างทับกลับเป็น 0) ⇒ ใหม่: ห้ามลด เอาค่ามากกว่ารายช่อง */
+    for(var d in cur){
+      if(STORE.map[d]===undefined) STORE.map[d] = cur[d];
+      else { var mx = keepMax(STORE.map[d], cur[d]); if(mx) STORE.map[d] = mx; }
+    }
     localStorage.setItem("solar3_days", JSON.stringify(STORE.map)); STORE.dirty=false;
   }
   catch(e){ S.storeErr = "เก็บลงเครื่องไม่ได้: "+e; }
@@ -1647,7 +1664,7 @@ function onData(j, since, repairFrom){
   (function(){
     if(!j || !j.ok){ onFail((j&&j.err)||"API ตอบ ok=false"); return; }
     var m = storeMerge(j.days, repairFrom);
-    if(repairFrom) save("fix1008","2");       // จำเมื่อรอบซ่อมสำเร็จเท่านั้น — ล้มกลางทาง รอบรีเฟรชถัดไปลองใหม่
+    if(repairFrom) save("fix1008", String(Date.now())); // จำเวลาที่ซ่อมสำเร็จ — ล้มกลางทาง รอบรีเฟรชถัดไปลองใหม่
     S.sync = { got:(j.days||[]).length, added:m.added, updated:m.updated, since:since, full:!!j.full };
     j.days = storeRows();                     // ทุกหน้าอ่านจากคลังในเครื่อง ไม่ใช่จาก response
     snapSave(j);                              // 2026-09-22 จำ now+intraday ไว้ให้รอบเปิดถัดไปวาดทันที
@@ -1664,8 +1681,10 @@ function onData(j, since, repairFrom){
     // 🔵 วางไว้หลัง render() เพื่อให้ผู้ใช้เห็นของเก่าก่อน แล้วค่อยรอรอบใหญ่ ไม่ใช่จอว่างตอนรอ
     /* 2026-10-08 ซ่อมครั้งเดียวต่อเครื่อง: วันที่ถูกยอดตี 1 ทับไว้ตั้งแต่ 23 ก.ย. เก่ากว่า 5 วันแล้ว รอบปกติแตะไม่ได้
        ⇒ ขอ server เฉพาะตั้งแต่ REPAIR_FROM 1 รอบ (ยกค่าขึ้นได้อย่างเดียว · วันก่อน REPAIR_FROM ไม่แตะ) แล้วจำ flag ไม่ทำซ้ำ
-       flag "2" ถูกเขียนใน onData ตอนรอบซ่อมสำเร็จ ⇒ รอบซ่อมเองไม่เข้าบล็อกนี้ซ้ำ = ไม่ลูป */
-    if(since && !repairFrom && ls("fix1008","") !== "2"){
+       ยิงเมื่อคลังยังมีรอยยอดตี 1 (needRepair) และซ่อมครั้งล่าสุดเกิน 10 นาที ⇒ คลังสะอาด = ไม่ยิงเลย
+       (10 นาที ไม่ใช่วันละครั้ง: หน้าต่างรุ่นเก่าที่เปิดค้างทับกลับได้ทุก 2 นาที จนกว่าจะถูกปิด)
+       flag = เวลาที่ซ่อมสำเร็จ เขียนใน onData ⇒ รอบซ่อมเองไม่เข้าบล็อกนี้ซ้ำ = ไม่ลูป */
+    if(since && !repairFrom && !(Date.now() - (+ls("fix1008","0") || 0) < 600000) && needRepair()){
       st.innerHTML += '<br><span style="color:var(--muted)">ซ่อมยอดรายวันตั้งแต่ '+REPAIR_FROM+' (ครั้งเดียว)…</span>';
       load(false, REPAIR_FROM);
       return;
