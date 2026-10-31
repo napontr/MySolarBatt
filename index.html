@@ -1834,9 +1834,16 @@ storeLoad();                      // มีของเก่าในเคร�
                  cycle:guessCycle(), meta:{} });
   render();
 })();
-loadNow();                        // เส้นเบา — ค่ากำลังไฟสดมาก่อน ไม่ต้องรอก้อนใหญ่
-load();
-setInterval(function(){ load(); }, 120000);
+/* 2026-10-31 HO-261031-skill-1742 — แท็บถูกซ่อน/ย่อ = ไม่มีคนดู ⇒ ข้ามรอบรีเฟรช (skill deye-monitoring-best-practices)
+   เดิมหน้าต่างที่เปิดค้างทั้งคืนยิงทุก 2 นาที · กลับมาดูเมื่อไหร่ = ดึงทันทีถ้าค่าเก่ากว่า 2 นาที
+   ข้อมูลไม่หาย: server ส่ง 5 วันล่าสุดซ้ำทุกรอบอยู่แล้ว (RESEND_DAYS_) */
+var REFRESH_MS = 120000, lastPoll = 0;
+function poll(){ lastPoll = Date.now(); loadNow(); load(); }
+poll();
+setInterval(function(){ if(!document.hidden) { lastPoll = Date.now(); load(); } }, REFRESH_MS);
+document.addEventListener("visibilitychange", function(){
+  if(!document.hidden && Date.now() - lastPoll > REFRESH_MS) poll();
+});
 if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(function(){}); }
 </script>
 </body>
