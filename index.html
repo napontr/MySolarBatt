@@ -1467,8 +1467,10 @@ function viewNow(d){
   +       '<div class="v">'+(batt===null?"—":fw(Math.abs(batt)))+'<u>W</u></div>'
   +     '</div>'
   +     '<div class="heroR">'
-  +       tile("ผลิตแล้ว", f(t?t.gen:null,1), "kWh", null, "gen")
-  +       tile("ซื้อไฟแล้ว", f(t?t.imp:null,1), "kWh", t?("≈ ฿"+f(t.imp*S.rate,0)):null, "cost")
+  //      v3.18.7 (Napon: "เปลี่ยนเป็น ประหยัดได้ กับ ค่าไฟต้องจ่าย แทนดีกว่า คนอื่นๆ เห็นภาพกว่า")
+  //      เงินบาทเป็นตัวหลัก · kWh ลงบรรทัดเล็ก · สูตรเดียวกับแท็บ "วันนี้" (saved = (self+dis)×rate · cost = imp×rate)
+  +       tile("ประหยัดได้", t?"฿"+f(t.saved,0):"—", "", t?(f(t.self+t.dis,1)+" kWh"):null, "good")
+  +       tile("ค่าไฟต้องจ่าย", t?"฿"+f(t.cost,0):"—", "", t?(f(t.imp,1)+" kWh"):null, "cost")
   +     '</div>'
   +   '</div>'
   + '</div>'
