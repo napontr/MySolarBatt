@@ -1469,9 +1469,10 @@ function pflow(pv, load, batt, grid, soc, mx){   // v3.18.11 mx = แบตส�
     + e
     + '<g class="pf-fx"></g>'
     + pfHub()
-    // v3.19.2 กลางคืน (17:00–06:59 และแดดต่ำกว่า 20 W) = พระจันทร์ · กลางวันแต่แดด 0 = ยังเป็นดวงอาทิตย์จาง (เตือนว่าแผงผิดปกติ)
+    // v3.19.2 กลางคืน (17:00–06:59 และแดดต่ำกว่า 10 W) = พระจันทร์ · กลางวันแต่แดด 0 = ยังเป็นดวงอาทิตย์จาง (เตือนว่าแผงผิดปกติ)
+    // v3.19.3 (Napon: "10-199w ดวงอาทิตย์จาง 200w ขึ้นไปถึง แดดจ้า") — เกณฑ์นี้คุมแค่รูป · เส้นไฟยังวิ่งตั้งแต่ 20 W
     + (night ? pfNode("sun", pfIconMoon('var(--moon)'), 'กลางคืน', fw(pv), 'var(--moon)', true)
-             : pfNode("sun", pfIconSun(cSun), 'แดด', fw(pv), cSun, on(pv)))
+             : pfNode("sun", pfIconSun(cSun), 'แดด', fw(pv), cSun, pv!==null && pv!==undefined && !isNaN(pv) && pv>=200))
     + pfNode("batt", pfIconBatt(cBatt, soc),
         (batt!==null&&batt<0?'ชาร์จเข้าแบต':'จากแบต'),
         (batt===null?'—':fw(Math.abs(batt))), cBatt, on(batt))
