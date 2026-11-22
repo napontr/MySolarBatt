@@ -541,6 +541,15 @@ header .stamp{margin-top:7px;font-size:12px}
 .hero > .tile.tb{padding-top:6px;padding-bottom:6px}
 /* v3.18.9 จอแอปจริงบน S24U สูง ~805 px (หักแถบสถานะ+ปุ่ม Android) ไม่ใช่ 915 ⇒ ช่องไฟระหว่างการ์ด 10 -> 6 */
 .card{margin-bottom:6px}
+/* v3.18.11 Batt % ตัวใหญ่ที่สุดในหน้า (Napon: ให้พ่อแม่ดู เป็นโจทย์เบอร์ 1) */
+.ring{width:114px;height:114px}
+.ring .val b{font-size:40px;letter-spacing:-.03em}
+.pf-mx{font-size:10.5px}
+/* v3.18.11 2 กล่องเงินวางตรง ไม่มีการ์ดห่อ ⇒ ให้กล่องมีพื้น/เงาแบบการ์ดเอง */
+.sumrow{margin:0 0 6px}
+.sumrow .tile{background:var(--surface);box-shadow:var(--hi),inset 0 0 0 1px var(--ring),var(--shadow);padding:10px 14px}
+.sumrow .tile .v{font-size:26px}
+.ring .val b .pc{font-size:16px}
 /* v3.18.10 สูงสุดวันนี้ อยู่ใต้ % ในวงแบต */
 .ring .val .rmx{font-size:9.5px;color:var(--muted);margin-top:2px;line-height:1;white-space:nowrap}
 .card:has(.hero){padding-top:10px;padding-bottom:10px}
@@ -1111,17 +1120,17 @@ function ring(soc, mx){   // v3.18.10 mx = สูงสุดวันนี้ 
    🔑 กติกาเดิมทั้งหมดยังอยู่: ทิศอ่านจากเครื่องหมายค่าจริง · ต่ำกว่า 20 W = นิ่ง (ไม่มีอนุภาค) · ยิ่งวัตต์สูงยิ่งวิ่งเร็ว
    🔴 เส้นทุกเส้นเก็บเป็น "โหนด -> ฮับ" · ไฟไหลกลับทาง = อนุภาคเดินถอยหลังบนเส้นเดิม (data-rev) */
 /* v3.18.2 (Napon: "เอาให้เปิดได้ใน S24 พอดี"): ผังเตี้ยลง 270 -> 230 · ขยับแบต/บ้าน/ฮับขึ้น · ขนาดไอคอนเท่าเดิม */
-var PF_VB  = { w:372, h:210 };   // v3.18.9 บีบ 230 -> 186 · v3.18.10 ขยายกลับ 210 (เหลือที่จากตัดบรรทัดย่อย)
-var PF_HUB = { x:186, y:108 };
-var PF_POS = { sun:[112,38], grid:[278,48], batt:[46,168], home:[306,173] };
+var PF_VB  = { w:372, h:230 };   // v3.18.9 บีบ 230->186 · v3.18.10 210 · v3.18.11 กลับ 230 (ตัดการ์ดสรุปแล้วมีที่)
+var PF_HUB = { x:186, y:118 };
+var PF_POS = { sun:[112,40], grid:[278,52], batt:[46,184], home:[306,190] };
 var PF_PATH = {
-  sun :"M118 66 C124 78 158 74 174 90",
-  grid:"M260 64 C246 79 222 75 207 89",
-  batt:"M60 157 C90 142 130 144 164 122",
-  home:"M280 184 C250 186 228 150 208 124"
+  sun :"M118 68 C124 82 158 82 174 100",
+  grid:"M260 70 C246 86 222 82 207 98",
+  batt:"M60 172 C90 156 130 158 164 134",
+  home:"M280 202 C250 204 228 164 208 136"
 };
 /* ตำแหน่งป้าย [x, y, text-anchor] — บ้านวางป้ายเหนือรูป เพราะเส้นเข้าจากซ้ายจะพาดทับถ้าวางข้าง ๆ */
-var PF_LAB = { sun:[72,26,"end"], grid:[302,42,"start"], batt:[72,162,"start"], home:[306,125,"middle"] };
+var PF_LAB = { sun:[72,28,"end"], grid:[302,46,"start"], batt:[72,176,"start"], home:[306,140,"middle"] };
 /* อนุภาค: จำนวนต่อเส้น · ความยาวหาง (จุด) · ระยะห่างจุดหาง (px) · รัศมีหัว · ความเร็ว px/s = v0 + v1*q (q = |W|/3000 สูงสุด 1) */
 var PF_FX = { n:4, tail:12, gap:1.4, head:1.9, v0:13, v1:56 };
 var PF_REDUCE = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -1416,7 +1425,7 @@ function dayStrip(d){
     + (n ? '' : '<p class="note">ยังไม่มีข้อมูลของวันนี้</p>');
 }
 
-function pflow(pv, load, batt, grid, soc){
+function pflow(pv, load, batt, grid, soc, mx){   // v3.18.11 mx = แบตสูงสุดวันนี้ (ย้ายมาจากวงแบต)
   var gridOut = (grid!==null && grid<0);
   // v3.18.4 ใช้แบต (batt>0 = จ่ายออก) = ส้มแดง · ชาร์จ/นิ่ง = เขียว
   var cSun='var(--solar)', cBatt=(batt!==null && batt>=20 ? 'var(--batt-dis)' : 'var(--batt)'), cHome='var(--home)',
@@ -1432,8 +1441,8 @@ function pflow(pv, load, batt, grid, soc){
   return '<div class="pflow"><svg viewBox="0 0 '+PF_VB.w+' '+PF_VB.h+'" role="img" aria-label="ผังทิศทางไฟตอนนี้">'
     + pfDefs()
     // วงโคจรประดับจาง ๆ ทั้งการ์ด (หอดูดาว) — วาดก่อนทุกอย่าง
-    + '<ellipse class="pf-deco" cx="'+c.x+'" cy="'+c.y+'" rx="176" ry="68"/>'
-    + '<ellipse class="pf-deco" cx="'+c.x+'" cy="'+c.y+'" rx="120" ry="40" stroke-dasharray="2 5"/>'
+    + '<ellipse class="pf-deco" cx="'+c.x+'" cy="'+c.y+'" rx="176" ry="74"/>'
+    + '<ellipse class="pf-deco" cx="'+c.x+'" cy="'+c.y+'" rx="120" ry="44" stroke-dasharray="2 5"/>'
     + e
     + '<g class="pf-fx"></g>'
     + pfHub()
@@ -1445,6 +1454,8 @@ function pflow(pv, load, batt, grid, soc){
         (grid===null?'กริด':(gridOut?'ไหลออกกริด':'ซื้อจากกริด')),
         (grid===null?'—':fw(Math.abs(grid))), cGrid, on(grid))
     + pfNode("home", pfIconHome(cHome, load), 'บ้าน', fw(load), cHome, on(load))
+    // v3.18.11 (Napon: "สูงสุด 100 เอาไปไว้ในทิศทางไฟ แทนได้ไหม") ใต้ตัวเลขแบต
+    + (mx===null||mx===undefined ? '' : '<text class="pf-lab pf-mx" x="'+PF_LAB.batt[0]+'" y="'+(PF_LAB.batt[1]+41)+'" text-anchor="start">สูงสุดวันนี้ '+f(mx)+'%</text>')
     + '</svg></div>';
 }
 
@@ -1494,7 +1505,7 @@ function viewNow(d){
      🔵 ตัด "ต่ำสุด" ออกแล้วตั้งแต่รอบก่อน — ค่าเดิมทุกวัน ไม่ได้บอกอะไรใหม่ */
   +   '<div class="hero">'
   +     '<div class="heroL">'
-  +       '<div class="ringWrap">'+ring(soc, st.socMax)   // v3.18.10 สูงสุดวันนี้อยู่ในวงแล้ว
+  +       '<div class="ringWrap">'+ring(soc)   // v3.18.11 ตัด "สูงสุด" ออก (Napon: Batt % ตัวใหญ่ให้พ่อแม่ดู = โจทย์เบอร์ 1)
   +       '</div>'
   +     '</div>'
   //     2026-09-22 ตัดบรรทัด "+ เข้าแบต / − ออกจากแบต" ออกตามที่ Napon สั่ง
@@ -1516,7 +1527,7 @@ function viewNow(d){
   // 2026-09-22 เอาคำอธิบาย "ค่ากริดคำนวณจากสมดุล…" ออก — Napon สั่ง ให้พอดีจอมือถือไม่ต้องเลื่อน
   // 🔵 ตัดได้โดยไม่เสียความถูกต้อง เพราะข้อความนั้นพูดแบบเหมารวมทั้งที่ getData_() อ่าน wirePower
   //    จาก Deye ก่อนเสมอ (ดู meta.gridFrom) จะคำนวณจากสมดุลเฉพาะตอนไม่มีค่านั้น
-  +   pflow(pv, load, batt, grid, soc)
+  +   pflow(pv, load, batt, grid, soc, st.socMax)
   + '</div>'
 
   // 2026-09-22 แถบ 24 ชั่วโมง วางใต้ "ทิศทางไฟ" ตามที่ Napon สั่ง
@@ -1525,10 +1536,9 @@ function viewNow(d){
   +   dayStrip(d)
   + '</div>'
 
-  + '<div class="card">'
-  //      2026-09-23 เปลี่ยนหัวจาก "วันนี้ถึงตอนนี้" → "สรุปวันนี้" (Napon ขอคำที่เข้าใจง่ายขึ้น)
-  +   '<h2>สรุปวันนี้</h2>'
-  +   '<div class="tiles">'
+  //      v3.18.11 (Napon: "เอาคำว่าสรุปวันนี้ออก แล้วโชว์ การ์ด ประหยัดได้ กับ ค่าไฟฟ้า วันนี้ไปเลย")
+  //      ตัดกรอบการ์ด + หัว "สรุปวันนี้" · เหลือ 2 กล่องวางตรง (คลาส sumrow ให้พื้นหลังแบบการ์ด)
+  +   '<div class="tiles sumrow">'
   /*      2026-09-22 Napon ตัดออกทั้ง "ไม่ซื้อไฟจากกริดเลย" และ "แดดคลุมบ้านได้เอง"
           (อันหลังลองใส่แล้วเขาบอกว่างง) ⇒ ช่องนี้ไม่มีการ์ดแล้ว
           🔵 st.gridFreeMin / st.coverMin ยังคำนวณอยู่ใน derive() เอากลับมาแสดงได้ทุกเมื่อ */
@@ -1538,8 +1548,7 @@ function viewNow(d){
   //      v3.18.8 คิดแบบ TOU (touToday) · บรรทัดเล็กบอก kWh แยก peak / off-peak
   +     tile("ประหยัดได้", tou?"฿"+f(tou.saved,0):"—", "", null, "good")   // v3.18.10 ตัดบรรทัด kWh/peak (Napon)
   +     tile("ค่าไฟวันนี้", tou?"฿"+f(tou.cost,0):"—", "", null, "cost")
-  +   '</div>'
-  + '</div>';
+  +   '</div>';
 }
 
 /* 2026-09-23 การ์ด "แบตถึง 90%" (Napon สั่ง)
