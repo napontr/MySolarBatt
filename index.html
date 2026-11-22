@@ -359,6 +359,7 @@ details[open]>summary::before{content:"▾ "}
   --line:#dce5df; --axis:#c2cec7; --ring:rgba(32,49,44,.11); --hair:rgba(32,49,44,.28);
   --brass:#386653; --brass-soft:rgba(56,102,83,.30);
   --solar:#c27a0e; --batt:#178a46; --batt-dis:#e0521a; --grid:#c23b30; --home:#2f6f69; --export:#5b49c4;
+  --moon:#5866a8;
   --good:#178a46; --serious:#e0521a; --pearl:#ffffff;
   --orb-hi:#ffffff; --orb-lo:#e3ebe5;
   --glow:rgba(56,102,83,.10);
@@ -374,6 +375,7 @@ details[open]>summary::before{content:"▾ "}
     --line:#26362f; --axis:#33463f; --ring:rgba(205,220,214,.14); --hair:rgba(220,232,226,.38);
     --brass:#8ECDB4; --brass-soft:rgba(142,205,180,.35);
     --solar:#F2B04F; --batt:#2FD27A; --batt-dis:#FF6B2C; --grid:#F2685C; --home:#9FDCD4; --export:#a99cf5;
+    --moon:#C9D3FF;
     --good:#2FD27A; --serious:#FF6B2C; --pearl:#f4efe4;
     --orb-hi:#2c3e39; --orb-lo:#101917;
     --glow:rgba(142,205,180,.12); --aurora:rgba(142,205,180,.16);
@@ -388,6 +390,7 @@ details[open]>summary::before{content:"▾ "}
   --line:#26362f; --axis:#33463f; --ring:rgba(205,220,214,.14); --hair:rgba(220,232,226,.38);
   --brass:#8ECDB4; --brass-soft:rgba(142,205,180,.35);
   --solar:#F2B04F; --batt:#2FD27A; --batt-dis:#FF6B2C; --grid:#F2685C; --home:#9FDCD4; --export:#a99cf5;
+  --moon:#C9D3FF;
   --good:#2FD27A; --serious:#FF6B2C; --pearl:#f4efe4;
   --orb-hi:#2c3e39; --orb-lo:#101917;
   --glow:rgba(142,205,180,.12); --aurora:rgba(142,205,180,.16);
@@ -549,6 +552,9 @@ header .stamp{margin-top:7px;font-size:12px}
 .sumrow{margin:0 0 6px}
 .sumrow .tile{background:var(--surface);box-shadow:var(--hi),inset 0 0 0 1px var(--ring),var(--shadow);padding:10px 14px}
 .sumrow .tile .v{font-size:26px}
+.pf-star{transform-box:fill-box;transform-origin:center;animation:pftw 2.6s ease-in-out infinite}
+@keyframes pftw{0%,100%{opacity:.25;transform:scale(.7)}50%{opacity:1;transform:scale(1.1)}}
+@media (prefers-reduced-motion:reduce){ .pf-star{animation:none} }
 .ring .val b .pc{font-size:16px}
 /* v3.18.10 สูงสุดวันนี้ อยู่ใต้ % ในวงแบต */
 .ring .val .rmx{font-size:9.5px;color:var(--muted);margin-top:2px;line-height:1;white-space:nowrap}
@@ -1122,15 +1128,15 @@ function ring(soc, mx){   // v3.18.10 mx = สูงสุดวันนี้ 
 /* v3.18.2 (Napon: "เอาให้เปิดได้ใน S24 พอดี"): ผังเตี้ยลง 270 -> 230 · ขยับแบต/บ้าน/ฮับขึ้น · ขนาดไอคอนเท่าเดิม */
 var PF_VB  = { w:372, h:230 };   // v3.18.9 บีบ 230->186 · v3.18.10 210 · v3.18.11 กลับ 230 · v3.19.0 วาง 4 มุมสมมาตรรอบฮับ
 var PF_HUB = { x:186, y:116 };
-var PF_POS = { sun:[124,46], grid:[248,46], batt:[124,186], home:[248,186] };
+var PF_POS = { sun:[64,44], grid:[308,44], batt:[124,186], home:[248,186] };   // v3.19.1 แดด/กริดออกริม ป้ายลงใต้รูป
 var PF_PATH = {
-  sun :"M138 74 C144 88 156 96 168 102",
-  grid:"M234 74 C228 88 216 96 204 102",
+  sun :"M100 58 C130 64 152 84 166 100",
+  grid:"M272 58 C242 64 220 84 206 100",
   batt:"M126 158 C132 144 150 136 166 130",
   home:"M246 158 C240 144 222 136 206 130"
 };
 /* ตำแหน่งป้าย [x, y, text-anchor] — บ้านวางป้ายเหนือรูป เพราะเส้นเข้าจากซ้ายจะพาดทับถ้าวางข้าง ๆ */
-var PF_LAB = { sun:[80,40,"end"], grid:[292,40,"start"], batt:[80,180,"end"], home:[292,180,"start"] };
+var PF_LAB = { sun:[64,102,"middle"], grid:[308,102,"middle"], batt:[80,180,"end"], home:[292,180,"start"] };
 /* อนุภาค: จำนวนต่อเส้น · ความยาวหาง (จุด) · ระยะห่างจุดหาง (px) · รัศมีหัว · ความเร็ว px/s = v0 + v1*q (q = |W|/3000 สูงสุด 1) */
 var PF_FX = { n:4, tail:12, gap:1.4, head:1.9, v0:13, v1:56 };
 var PF_REDUCE = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -1181,6 +1187,20 @@ function pfIconSun(c){
        + '<path d="M31 16 A15 4.4 0 0 1 1 16" '+orb+' opacity=".95"/>'           // ซีกหน้า
        + (PF_REDUCE ? '' : '<g transform="rotate(-10 16 16)"><circle r=".9" fill="#fff4e0">'
        +   '<animateMotion dur="6s" repeatCount="indefinite" path="M31 16 A15 4.4 0 0 1 1 16 A15 4.4 0 0 1 31 16"/></circle></g>');
+}
+/* v3.19.2 (Napon: "ถ้ากลางคืน ไม่มีไฟจากดวงอาทิตย์เปลี่ยนเปนรูปพระจันทร์แทน")
+   เสี้ยวจันทร์ = วงกลมเจาะด้วยวงที่เยื้องขวาบน (mask) · แสงนวลหายใจ · ดาว 3 ดวงกะพริบคนละจังหวะ
+   id ของ mask/gradient ไม่ชน เพราะมีผังเดียวต่อหน้า */
+function pfIconMoon(c){
+  var star = function(x,y,s,d){ return '<path class="pf-star" style="animation-delay:'+d+'s" d="M'+x+' '+(y-s)+' L'+(x+s*.28)+' '+(y-s*.28)+' L'+(x+s)+' '+y+' L'+(x+s*.28)+' '+(y+s*.28)+' L'+x+' '+(y+s)+' L'+(x-s*.28)+' '+(y+s*.28)+' L'+(x-s)+' '+y+' L'+(x-s*.28)+' '+(y-s*.28)+'Z" fill="'+c+'"/>'; };
+  return '<defs><mask id="pfMoonM"><rect width="32" height="32" fill="#fff"/><circle cx="20.6" cy="11.6" r="7.4" fill="#000"/></mask>'
+       + '<radialGradient id="pfMoonGlow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#cdd6ff" stop-opacity=".55"/><stop offset="1" stop-color="#cdd6ff" stop-opacity="0"/></radialGradient>'
+       + '<linearGradient id="pfMoonDisc" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#aab6e8"/></linearGradient></defs>'
+       + '<circle class="pf-sunglow" cx="15" cy="17" r="12" fill="url(#pfMoonGlow)"/>'
+       + '<circle cx="15" cy="17" r="9.2" fill="url(#pfMoonDisc)" mask="url(#pfMoonM)"/>'
+       + '<circle cx="15" cy="17" r="9.2" fill="none" stroke="'+c+'" stroke-width=".7" opacity=".7" mask="url(#pfMoonM)"/>'
+       + '<circle cx="10.6" cy="19.4" r="1.2" fill="#8d98c8" opacity=".45"/><circle cx="13.4" cy="23" r=".8" fill="#8d98c8" opacity=".4"/>'
+       + star(25.5,19.5,2.2,0) + star(28.6,9,1.4,1.1) + star(5,6.5,1.6,2.2);
 }
 /** v3.18.2 (Napon: "Batt ขอเป็นแนวตั้ง และ scale ตามที่จุไฟได้จริงๆ")
  *  แบตแนวตั้ง · ระดับน้ำไฟ = SOC จริงแบบต่อเนื่อง (ไม่ปัดเป็นช่อง) · ขีดจาง 25/50/75% ไว้กะระดับ
@@ -1431,6 +1451,9 @@ function pflow(pv, load, batt, grid, soc, mx){   // v3.18.11 mx = แบตส�
   var cSun='var(--solar)', cBatt=(batt!==null && batt>=20 ? 'var(--batt-dis)' : 'var(--batt)'), cHome='var(--home)',
       cGrid = gridOut ? 'var(--export)' : 'var(--grid)';
   var on = function(v){ return v!==null && v!==undefined && !isNaN(v) && Math.abs(v)>=20; };
+  // Napon: "ไม่มีไฟ คือ < 10w" · ต้องเป็นช่วงเย็น-เช้าด้วย (กลางวันแดด 0 = แผงผิดปกติ ไม่ใช่กลางคืน)
+  var hh = new Date().getHours(), night = (pv===null || pv===undefined || isNaN(pv) || pv<10) && (hh>=17 || hh<7);
+  if(night) cSun = 'var(--moon)';
   var c = PF_HUB;
   // เส้นทุกเส้นเก็บเป็น โหนด -> ฮับ · rev=true = ไฟไหลจากฮับออกไปหาโหนด
   var e = pfEdge("sun",  cSun,  pv,   false)                     // แดดเข้าเสมอ
@@ -1446,7 +1469,9 @@ function pflow(pv, load, batt, grid, soc, mx){   // v3.18.11 mx = แบตส�
     + e
     + '<g class="pf-fx"></g>'
     + pfHub()
-    + pfNode("sun",  pfIconSun(cSun),  'แดด', fw(pv), cSun, on(pv))
+    // v3.19.2 กลางคืน (17:00–06:59 และแดดต่ำกว่า 20 W) = พระจันทร์ · กลางวันแต่แดด 0 = ยังเป็นดวงอาทิตย์จาง (เตือนว่าแผงผิดปกติ)
+    + (night ? pfNode("sun", pfIconMoon('var(--moon)'), 'กลางคืน', fw(pv), 'var(--moon)', true)
+             : pfNode("sun", pfIconSun(cSun), 'แดด', fw(pv), cSun, on(pv)))
     + pfNode("batt", pfIconBatt(cBatt, soc),
         (batt!==null&&batt<0?'ชาร์จเข้าแบต':'จากแบต'),
         (batt===null?'—':fw(Math.abs(batt))), cBatt, on(batt))
