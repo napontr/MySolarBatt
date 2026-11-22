@@ -358,8 +358,8 @@ details[open]>summary::before{content:"▾ "}
   --ink:#20312C; --ink-2:#3d524b; --muted:#5a6d66;
   --line:#dce5df; --axis:#c2cec7; --ring:rgba(32,49,44,.11); --hair:rgba(32,49,44,.28);
   --brass:#386653; --brass-soft:rgba(56,102,83,.30);
-  --solar:#a87434; --batt:#3d7a4c; --grid:#a5554c; --home:#3B6662; --export:#6a5fa8;
-  --good:#2f7a55; --pearl:#ffffff;
+  --solar:#c27a0e; --batt:#178a46; --batt-dis:#e0521a; --grid:#c23b30; --home:#2f6f69; --export:#5b49c4;
+  --good:#178a46; --serious:#e0521a; --pearl:#ffffff;
   --orb-hi:#ffffff; --orb-lo:#e3ebe5;
   --glow:rgba(56,102,83,.10);
   --aurora:rgba(56,102,83,.10);
@@ -373,8 +373,8 @@ details[open]>summary::before{content:"▾ "}
     --ink:#EDF1E8; --ink-2:#c6d1ca; --muted:#93a59c;
     --line:#26362f; --axis:#33463f; --ring:rgba(205,220,214,.14); --hair:rgba(220,232,226,.38);
     --brass:#8ECDB4; --brass-soft:rgba(142,205,180,.35);
-    --solar:#D6AF82; --batt:#A7D0AD; --grid:#DBA39B; --home:#BCD8D4; --export:#b9b0e0;
-    --good:#8ECDB4; --pearl:#f4efe4;
+    --solar:#F2B04F; --batt:#2FD27A; --batt-dis:#FF6B2C; --grid:#F2685C; --home:#9FDCD4; --export:#a99cf5;
+    --good:#2FD27A; --serious:#FF6B2C; --pearl:#f4efe4;
     --orb-hi:#2c3e39; --orb-lo:#101917;
     --glow:rgba(142,205,180,.12); --aurora:rgba(142,205,180,.16);
     --shadow:0 24px 40px -24px rgba(0,0,0,.85);
@@ -387,8 +387,8 @@ details[open]>summary::before{content:"▾ "}
   --ink:#EDF1E8; --ink-2:#c6d1ca; --muted:#93a59c;
   --line:#26362f; --axis:#33463f; --ring:rgba(205,220,214,.14); --hair:rgba(220,232,226,.38);
   --brass:#8ECDB4; --brass-soft:rgba(142,205,180,.35);
-  --solar:#D6AF82; --batt:#A7D0AD; --grid:#DBA39B; --home:#BCD8D4; --export:#b9b0e0;
-  --good:#8ECDB4; --pearl:#f4efe4;
+  --solar:#F2B04F; --batt:#2FD27A; --batt-dis:#FF6B2C; --grid:#F2685C; --home:#9FDCD4; --export:#a99cf5;
+  --good:#2FD27A; --serious:#FF6B2C; --pearl:#f4efe4;
   --orb-hi:#2c3e39; --orb-lo:#101917;
   --glow:rgba(142,205,180,.12); --aurora:rgba(142,205,180,.16);
   --shadow:0 24px 40px -24px rgba(0,0,0,.85);
@@ -1290,7 +1290,7 @@ function battChip(batt, soc){
 var STRIP_CHG_W = 100;              // ชาร์จ: ต้องเกิน 100 W ถึงนับ
 var STRIP_DIS_W = 20;               // จ่ายออก: เกณฑ์เดิม
 var STRIP_CHG = "var(--batt)";      // เขียว
-var STRIP_DIS = "var(--serious)";   // ส้ม
+var STRIP_DIS = "var(--batt-dis)";  // ส้มแดง = ใช้แบต
 var STRIP_BUY = "var(--line)";      // เทา = ซื้อไฟ/นิ่ง (ไม่ลงสีตามที่สั่ง)
 
 function dayStrip(d){
@@ -1359,7 +1359,8 @@ function dayStrip(d){
 
 function pflow(pv, load, batt, grid, soc){
   var gridOut = (grid!==null && grid<0);
-  var cSun='var(--solar)', cBatt='var(--batt)', cHome='var(--home)',
+  // v3.18.4 ใช้แบต (batt>0 = จ่ายออก) = ส้มแดง · ชาร์จ/นิ่ง = เขียว
+  var cSun='var(--solar)', cBatt=(batt!==null && batt>=20 ? 'var(--batt-dis)' : 'var(--batt)'), cHome='var(--home)',
       cGrid = gridOut ? 'var(--export)' : 'var(--grid)';
   var on = function(v){ return v!==null && v!==undefined && !isNaN(v) && Math.abs(v)>=20; };
   var c = PF_HUB;
@@ -1409,7 +1410,7 @@ function viewNow(d){
      เขียว = ไฟเข้าแบต · แดง = ดึงออกจากแบต — สีชุดเดียวกับเส้นในผังไฟวิ่ง ไม่ให้แปลคนละอย่างในหน้าเดียว
      ต่ำกว่า 20 W ถือว่านิ่ง ตามเกณฑ์เดียวกับ pflow() เพราะ sensor แกว่งระดับนั้นเป็นปกติ */
   var bCol = (batt===null || Math.abs(batt)<=20) ? "var(--muted)"
-           : (batt<0 ? "var(--batt)" : "var(--grid)");
+           : (batt<0 ? "var(--batt)" : "var(--batt-dis)");   // v3.18.4 ใช้แบต = ส้มแดงสีเดียวกับผังไฟ
   // 2026-09-22 ตัด bLbl/bSign ("+ เข้าแบต" / "− ออกจากแบต") ทิ้ง — Napon สั่งเอาบรรทัดนั้นออก
   // เหลือ bCol ตัวเดียวที่ยังใช้ ⇒ ไม่ปล่อยตัวแปรตายค้างไว้ในไฟล์
 
@@ -1899,7 +1900,7 @@ function drawHist(d){
   var s = chartHost("cSrc");
   if(s) bars(s, { labels:labs, h:150, stacked:true, unit:" kWh", partialIdx:idx,
     series:[ {name:"แดด", color:cssv("--solar"), vals:B.map(function(b){ return b.self; })},
-             {name:"แบต", color:cssv("--batt"),  vals:B.map(function(b){ return b.dis; })},
+             {name:"แบต", color:cssv("--batt-dis"),  vals:B.map(function(b){ return b.dis; })},
              {name:"กริด",color:cssv("--grid"),  vals:B.map(function(b){ return b.imp; })} ],
     tipLabel:tip });
 
