@@ -539,6 +539,8 @@ header .stamp{margin-top:7px;font-size:12px}
 .heroR .tile .v{line-height:1.1}
 .heroR .tile .s{margin-top:0;line-height:1.2}
 .hero > .tile.tb{padding-top:6px;padding-bottom:6px}
+/* v3.18.9 จอแอปจริงบน S24U สูง ~805 px (หักแถบสถานะ+ปุ่ม Android) ไม่ใช่ 915 ⇒ ช่องไฟระหว่างการ์ด 10 -> 6 */
+.card{margin-bottom:6px}
 .card:has(.hero){padding-top:10px;padding-bottom:10px}
 </style>
 </head>
@@ -1107,17 +1109,17 @@ function ring(soc){
    🔑 กติกาเดิมทั้งหมดยังอยู่: ทิศอ่านจากเครื่องหมายค่าจริง · ต่ำกว่า 20 W = นิ่ง (ไม่มีอนุภาค) · ยิ่งวัตต์สูงยิ่งวิ่งเร็ว
    🔴 เส้นทุกเส้นเก็บเป็น "โหนด -> ฮับ" · ไฟไหลกลับทาง = อนุภาคเดินถอยหลังบนเส้นเดิม (data-rev) */
 /* v3.18.2 (Napon: "เอาให้เปิดได้ใน S24 พอดี"): ผังเตี้ยลง 270 -> 230 · ขยับแบต/บ้าน/ฮับขึ้น · ขนาดไอคอนเท่าเดิม */
-var PF_VB  = { w:372, h:230 };
-var PF_HUB = { x:186, y:118 };
-var PF_POS = { sun:[122,36], grid:[278,52], batt:[46,184], home:[306,190] };
+var PF_VB  = { w:372, h:186 };   // v3.18.9 บีบผังไฟ 230 -> 186 (แกนตั้ง ×0.8)
+var PF_HUB = { x:186, y:94 };
+var PF_POS = { sun:[126,36], grid:[278,42], batt:[46,148], home:[306,152] };
 var PF_PATH = {
-  sun :"M128 62 C132 86 160 80 174 98",
-  grid:"M260 70 C246 86 222 82 207 98",
-  batt:"M60 172 C90 156 130 158 164 134",
-  home:"M280 202 C250 204 228 164 208 136"
+  sun :"M130 64 C134 72 160 64 174 76",
+  grid:"M260 58 C246 70 222 66 207 78",
+  batt:"M60 138 C90 125 130 126 164 107",
+  home:"M280 162 C250 163 228 131 208 109"
 };
 /* ตำแหน่งป้าย [x, y, text-anchor] — บ้านวางป้ายเหนือรูป เพราะเส้นเข้าจากซ้ายจะพาดทับถ้าวางข้าง ๆ */
-var PF_LAB = { sun:[88,30,"end"], grid:[302,46,"start"], batt:[72,178,"start"], home:[306,140,"middle"] };
+var PF_LAB = { sun:[86,24,"end"], grid:[302,37,"start"], batt:[72,142,"start"], home:[306,106,"middle"] };
 /* อนุภาค: จำนวนต่อเส้น · ความยาวหาง (จุด) · ระยะห่างจุดหาง (px) · รัศมีหัว · ความเร็ว px/s = v0 + v1*q (q = |W|/3000 สูงสุด 1) */
 var PF_FX = { n:4, tail:12, gap:1.4, head:1.9, v0:13, v1:56 };
 var PF_REDUCE = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -1132,7 +1134,7 @@ function pfEdge(k, col, watt, rev){
 
 function pfNode(k, icon, label, val, col, on){
   // v3.18.1: ขนาด/จุดกลางรายโหนด — แดดใหญ่ขึ้น · บ้าน 2.5D กว้างกว่า (จุดกลาง x=20) · แท่นวงรีเฉพาะกริด/แบตแบบ mock
-  var p = PF_POS[k], L = PF_LAB[k], sc = ({sun:1.8, home:1.5})[k] || 1.45, cx = (k==="home"?20:16);
+  var p = PF_POS[k], L = PF_LAB[k], sc = ({sun:2.2, home:1.5})[k] || 1.45, cx = (k==="home"?20:16);
   return '<g class="'+(on?'pf-on':'pf-off')+'">'
     + '<circle class="pf-halo" cx="'+p[0]+'" cy="'+p[1]+'" r="22" fill="'+col+'" filter="url(#pfBlur)"/>'
     + (k==="grid"||k==="batt" ? '<ellipse cx="'+p[0]+'" cy="'+(p[1]+19)+'" rx="22" ry="4.5" fill="none" stroke="'+col+'" style="stroke-opacity:.45"/>' : '')
@@ -1428,8 +1430,8 @@ function pflow(pv, load, batt, grid, soc){
   return '<div class="pflow"><svg viewBox="0 0 '+PF_VB.w+' '+PF_VB.h+'" role="img" aria-label="ผังทิศทางไฟตอนนี้">'
     + pfDefs()
     // วงโคจรประดับจาง ๆ ทั้งการ์ด (หอดูดาว) — วาดก่อนทุกอย่าง
-    + '<ellipse class="pf-deco" cx="'+c.x+'" cy="'+c.y+'" rx="176" ry="74"/>'
-    + '<ellipse class="pf-deco" cx="'+c.x+'" cy="'+c.y+'" rx="120" ry="44" stroke-dasharray="2 5"/>'
+    + '<ellipse class="pf-deco" cx="'+c.x+'" cy="'+c.y+'" rx="176" ry="60"/>'
+    + '<ellipse class="pf-deco" cx="'+c.x+'" cy="'+c.y+'" rx="120" ry="36" stroke-dasharray="2 5"/>'
     + e
     + '<g class="pf-fx"></g>'
     + pfHub()
