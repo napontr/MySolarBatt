@@ -1120,17 +1120,17 @@ function ring(soc, mx){   // v3.18.10 mx = สูงสุดวันนี้ 
    🔑 กติกาเดิมทั้งหมดยังอยู่: ทิศอ่านจากเครื่องหมายค่าจริง · ต่ำกว่า 20 W = นิ่ง (ไม่มีอนุภาค) · ยิ่งวัตต์สูงยิ่งวิ่งเร็ว
    🔴 เส้นทุกเส้นเก็บเป็น "โหนด -> ฮับ" · ไฟไหลกลับทาง = อนุภาคเดินถอยหลังบนเส้นเดิม (data-rev) */
 /* v3.18.2 (Napon: "เอาให้เปิดได้ใน S24 พอดี"): ผังเตี้ยลง 270 -> 230 · ขยับแบต/บ้าน/ฮับขึ้น · ขนาดไอคอนเท่าเดิม */
-var PF_VB  = { w:372, h:230 };   // v3.18.9 บีบ 230->186 · v3.18.10 210 · v3.18.11 กลับ 230 (ตัดการ์ดสรุปแล้วมีที่)
-var PF_HUB = { x:186, y:118 };
-var PF_POS = { sun:[112,40], grid:[278,52], batt:[46,184], home:[306,190] };
+var PF_VB  = { w:372, h:230 };   // v3.18.9 บีบ 230->186 · v3.18.10 210 · v3.18.11 กลับ 230 · v3.19.0 วาง 4 มุมสมมาตรรอบฮับ
+var PF_HUB = { x:186, y:116 };
+var PF_POS = { sun:[124,46], grid:[248,46], batt:[124,186], home:[248,186] };
 var PF_PATH = {
-  sun :"M118 68 C124 82 158 82 174 100",
-  grid:"M260 70 C246 86 222 82 207 98",
-  batt:"M60 172 C90 156 130 158 164 134",
-  home:"M280 202 C250 204 228 164 208 136"
+  sun :"M138 74 C144 88 156 96 168 102",
+  grid:"M234 74 C228 88 216 96 204 102",
+  batt:"M126 158 C132 144 150 136 166 130",
+  home:"M246 158 C240 144 222 136 206 130"
 };
 /* ตำแหน่งป้าย [x, y, text-anchor] — บ้านวางป้ายเหนือรูป เพราะเส้นเข้าจากซ้ายจะพาดทับถ้าวางข้าง ๆ */
-var PF_LAB = { sun:[72,28,"end"], grid:[302,46,"start"], batt:[72,176,"start"], home:[306,140,"middle"] };
+var PF_LAB = { sun:[80,40,"end"], grid:[292,40,"start"], batt:[80,180,"end"], home:[292,180,"start"] };
 /* อนุภาค: จำนวนต่อเส้น · ความยาวหาง (จุด) · ระยะห่างจุดหาง (px) · รัศมีหัว · ความเร็ว px/s = v0 + v1*q (q = |W|/3000 สูงสุด 1) */
 var PF_FX = { n:4, tail:12, gap:1.4, head:1.9, v0:13, v1:56 };
 var PF_REDUCE = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -1455,7 +1455,7 @@ function pflow(pv, load, batt, grid, soc, mx){   // v3.18.11 mx = แบตส�
         (grid===null?'—':fw(Math.abs(grid))), cGrid, on(grid))
     + pfNode("home", pfIconHome(cHome, load), 'บ้าน', fw(load), cHome, on(load))
     // v3.18.11 (Napon: "สูงสุด 100 เอาไปไว้ในทิศทางไฟ แทนได้ไหม") ใต้ตัวเลขแบต
-    + (mx===null||mx===undefined ? '' : '<text class="pf-lab pf-mx" x="'+PF_LAB.batt[0]+'" y="'+(PF_LAB.batt[1]+41)+'" text-anchor="start">สูงสุดวันนี้ '+f(mx)+'%</text>')
+    + (mx===null||mx===undefined ? '' : '<text class="pf-lab pf-mx" x="'+PF_LAB.batt[0]+'" y="'+(PF_LAB.batt[1]+41)+'" text-anchor="'+PF_LAB.batt[2]+'">สูงสุดวันนี้ '+f(mx)+'%</text>')
     + '</svg></div>';
 }
 
