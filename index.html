@@ -603,6 +603,11 @@ var DEFAULT_API = "https://script.google.com/macros/s/AKfycbwTr9FGZYAWcuI4UUx0JW
 var S = {
   api:   ls("api", DEFAULT_API),
   rate:  +ls("rate", "4.40"),      // 🟡 ค่าตั้งต้น ยังไม่ได้ยืนยันกับบิล PEA จริง — แก้ได้ที่หน้าตั้งค่า (?cfg=1)
+  /* v3.18.8 มิเตอร์ TOU (Napon: "อย่าลืมคำนวน เรท มิเตอรแบบ tou ด้วย")
+     🟡 ค่าตั้งต้น = อัตราบ้านอยู่อาศัย TOU แรงดันต่ำ ตามข่าวฐานเศรษฐกิจ (ค้น 22 พ.ย. 2026) · ยังไม่รวม Ft / VAT
+        ยังไม่ได้ยืนยันกับบิล PEA จริง → แก้ได้ที่หน้าตั้งค่า · ใช้กับตัวเลข "วันนี้" ที่มีข้อมูลราย 5 นาทีเท่านั้น */
+  ratePk: +ls("ratePk", "5.7982"),
+  rateOff:+ls("rateOff","2.6369"),
   /* 2026-09-22 Napon สั่งให้ความจุแบตตั้งต้นที่ 14.1 kWh
      🔴 ใส่ default ใน ls() อย่างเดียวไม่พอ — ปุ่มบันทึกในหน้าตั้งค่า (?cfg=1) เขียน "0" ลงเครื่องเมื่อช่องว่าง
         (เดิม: value||"0") ⇒ เครื่องที่เคยกดบันทึกจะค้างที่ 0 แล้ว default ใหม่ไม่มีวันถูกใช้
@@ -800,6 +805,36 @@ function derive(d){
   d._cyc  = cycleStats(days, c.start, c.end, d.today);
   d._prev = cycleStats(days, c.prevStart, c.prevEnd, null);
   return d;
+}
+/* v3.18.8 TOU — on-peak = จันทร์–ศุกร์ 09:00–22:00 · ที่เหลือ (รวมเสาร์–อาทิตย์) = off-peak
+   🔴 ยังไม่รู้วันหยุดราชการ (ตามประกาศ วันหยุดนักขัตฤกษ์ปกติ = off-peak ทั้งวัน) ⇒ วันนั้นจะคิดแพงเกินจริง */
+function touPeak(dateStr, min){
+  var wd = new Date(dateStr+"T12:00:00").getDay();
+  return wd>=1 && wd<=5 && min>=540 && min<1320;
+}
+/* ค่าไฟ/ประหยัดของวันนี้แบบ TOU
+   ใช้ข้อมูลราย 5 นาทีหา "สัดส่วน peak/off" ของไฟที่ซื้อ และของไฟที่ไม่ต้องซื้อ
+   แล้วคูณกับ kWh ทางการของทั้งวัน (t.imp · t.self+t.dis) ⇒ kWh ที่โชว์ตรงกับกล่องอื่นในหน้า */
+function touToday(d){
+  var t = d._today, it = d._intra || {t:[]}, n = (it.t||[]).length;
+  if(!t) return null;
+  var bPk=0,bOff=0,sPk=0,sOff=0;
+  for(var i=0;i<n;i++){
+    var t0=it.t[i], t1=(i+1<n)?Math.min(it.t[i+1],t0+30):Math.min(1440,t0+5);
+    if(t1<=t0) continue;
+    var ld=it.load[i], gr=(it.grid&&it.grid.length)?it.grid[i]:null;
+    if(ld===null||gr===null) continue;
+    var buy=Math.max(0,gr), keep=Math.max(0,ld-buy), pk=touPeak(d.today,t0), span=t1-t0;
+    if(pk){ bPk+=buy*span; sPk+=keep*span; } else { bOff+=buy*span; sOff+=keep*span; }
+  }
+  var imp=t.imp||0, sav=(t.self||0)+(t.dis||0);
+  var fb = (bPk+bOff)>0 ? bPk/(bPk+bOff) : 0;          // สัดส่วนที่ซื้อช่วง peak
+  var fs = (sPk+sOff)>0 ? sPk/(sPk+sOff) : 0;
+  return { imp:imp, impPk:imp*fb, impOff:imp*(1-fb),
+           cost: imp*(fb*S.ratePk+(1-fb)*S.rateOff),
+           sav:sav, savPk:sav*fs,
+           saved: sav*(fs*S.ratePk+(1-fs)*S.rateOff),
+           samples:n };
 }
 function cycleStats(days, start, end, today){
   if(!start) return null;
@@ -1421,7 +1456,7 @@ function tile(l, v, u, s, tone){
 
 /* ---------- 4a) ตอนนี้ ---------- */
 function viewNow(d){
-  var w = d.now||{}, st = d._stat, t = d._today;
+  var w = d.now||{}, st = d._stat, t = d._today, tou = touToday(d);   // v3.18.8 TOU
   var soc=w.soc, batt=w.batt, pv=w.pv, load=w.load, grid=w.grid;
   var state = batt===null ? "—" : (batt<-20?"กำลังชาร์จ":(batt>20?"กำลังจ่ายไฟ":"นิ่ง"));
   var col = socColor(soc);
@@ -1467,10 +1502,8 @@ function viewNow(d){
   +       '<div class="v">'+(batt===null?"—":fw(Math.abs(batt)))+'<u>W</u></div>'
   +     '</div>'
   +     '<div class="heroR">'
-  //      v3.18.7 (Napon: "เปลี่ยนเป็น ประหยัดได้ กับ ค่าไฟต้องจ่าย แทนดีกว่า คนอื่นๆ เห็นภาพกว่า")
-  //      เงินบาทเป็นตัวหลัก · kWh ลงบรรทัดเล็ก · สูตรเดียวกับแท็บ "วันนี้" (saved = (self+dis)×rate · cost = imp×rate)
-  +       tile("ประหยัดได้", t?"฿"+f(t.saved,0):"—", "", t?(f(t.self+t.dis,1)+" kWh"):null, "good")
-  +       tile("ค่าไฟต้องจ่าย", t?"฿"+f(t.cost,0):"—", "", t?(f(t.imp,1)+" kWh"):null, "cost")
+  +       tile("ผลิตแล้ว", f(t?t.gen:null,1), "kWh", null, "gen")
+  +       tile("ซื้อไฟแล้ว", f(t?t.imp:null,1), "kWh", tou?("≈ ฿"+f(tou.cost,0)):null, "cost")   // v3.18.8 TOU
   +     '</div>'
   +   '</div>'
   + '</div>'
@@ -1496,9 +1529,12 @@ function viewNow(d){
   /*      2026-09-22 Napon ตัดออกทั้ง "ไม่ซื้อไฟจากกริดเลย" และ "แดดคลุมบ้านได้เอง"
           (อันหลังลองใส่แล้วเขาบอกว่างง) ⇒ ช่องนี้ไม่มีการ์ดแล้ว
           🔵 st.gridFreeMin / st.coverMin ยังคำนวณอยู่ใน derive() เอากลับมาแสดงได้ทุกเมื่อ */
-  +     tile("ผลิตสูงสุด", fw(st.peak), "W", st.peakAt===null?"—":"เวลา "+hhmm(st.peakAt), "gen")
-  //      2026-09-22 "ผลิตแล้ว" กับ "ซื้อไฟแล้ว" ย้ายขึ้นไปอยู่ขวามือของการ์ด Battery แล้ว
-  +     eta90
+  /*      v3.18.8 (Napon: "สรุปข้างล่างถึงเปลี่ยนเป็นประหยัดเท่าไหร กับค่าไฟวันนี้เท่าไหรแทน")
+          แทน "ผลิตสูงสุด" + การ์ด "แบตใช้ได้ถึง/แบตถึง 90%" (eta90 ยังคำนวณอยู่ เอากลับได้)
+          สูตรเดียวกับแท็บ "วันนี้": saved = (self+dis)×rate · cost = imp×rate */
+  //      v3.18.8 คิดแบบ TOU (touToday) · บรรทัดเล็กบอก kWh แยก peak / off-peak
+  +     tile("ประหยัดได้", tou?"฿"+f(tou.saved,0):"—", "", tou?(f(tou.sav,1)+" kWh · peak "+f(tou.savPk,1)):null, "good")
+  +     tile("ค่าไฟวันนี้", tou?"฿"+f(tou.cost,0):"—", "", tou?("peak "+f(tou.impPk,1)+" · off "+f(tou.impOff,1)+" kWh"):null, "cost")
   +   '</div>'
   + '</div>';
 }
@@ -1805,6 +1841,10 @@ function viewCfg(){
   + '<h2>ตั้งค่า</h2>'
   + '<div class="field"><label>ค่าไฟ (฿/kWh)<br><span style="font-size:10px;color:var(--muted)">ใช้คิดเงินทุกหน้า</span></label>'
   +   '<input id="inRate" type="number" step="0.01" value="'+S.rate+'"></div>'
+  + '<div class="field"><label>TOU on-peak (฿/kWh)<br><span style="font-size:10px;color:var(--muted)">จ–ศ 09:00–22:00 · ใช้กับ "วันนี้"</span></label>'
+  +   '<input id="inRatePk" type="number" step="0.0001" value="'+S.ratePk+'"></div>'
+  + '<div class="field"><label>TOU off-peak (฿/kWh)<br><span style="font-size:10px;color:var(--muted)">กลางคืน + เสาร์–อาทิตย์</span></label>'
+  +   '<input id="inRateOff" type="number" step="0.0001" value="'+S.rateOff+'"></div>'
   + '<div class="field"><label>ความจุแบต (kWh)<br><span style="font-size:10px;color:var(--muted)">0 = ไม่คำนวณเวลาที่เหลือ</span></label>'
   +   '<input id="inCap" type="number" step="0.1" value="'+S.cap+'"></div>'
   + '<div class="field" style="display:block"><label>Apps Script URL (/exec)</label>'
@@ -2162,6 +2202,8 @@ function bindCfg(){
   var out = document.getElementById("syncOut");
   document.getElementById("btnSave").onclick = function(){
     save("rate", document.getElementById("inRate").value||"4.40");
+    save("ratePk",  document.getElementById("inRatePk").value||"5.7982");    // v3.18.8 TOU
+    save("rateOff", document.getElementById("inRateOff").value||"2.6369");
     save("cap",  document.getElementById("inCap").value||"14.1");   // ช่องว่าง = กลับไปค่าตั้งต้น ไม่ใช่ 0
     save("api",  document.getElementById("inApi").value.trim()||DEFAULT_API);
     save("key",  document.getElementById("inKey").value.trim());
