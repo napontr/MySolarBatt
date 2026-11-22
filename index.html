@@ -3,7 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#eda100">
+<meta name="theme-color" content="#0d1112">
+<!-- 2026-11-22 v3.18.3 ค่าเริ่มต้นโหมดมืด — ตั้งก่อนวาดหน้า กันกะพริบ (ตัวสลับอยู่ท้ายไฟล์ applyTheme) -->
+<script>try{document.documentElement.setAttribute("data-theme",localStorage.getItem("solar3_theme")==="light"?"light":"dark");}catch(e){document.documentElement.setAttribute("data-theme","dark");}</script>
+<!-- 2026-11-19 ชุดหน้าตา "หน้าปัดนาฬิกา" — Plex Sans Thai ทั้งหน้า + Fraunces เฉพาะเลข SOC กับเลขบ้าน
+     โหลดไม่ได้ (ออฟไลน์) ก็ตกไปใช้ฟอนต์ระบบ ไม่กระทบการทำงาน -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Sora:wght@400;500;600&display=swap">
 <title>88/318 Deye Solar</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2218%22%20fill%3D%22%2328a745%22%2F%3E%3Crect%20x%3D%2217.6%22%20y%3D%2233.2%22%20width%3D%2260%22%20height%3D%2233.5%22%20rx%3D%227.4%22%20fill%3D%22none%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%225.2%22%2F%3E%3Crect%20x%3D%2279.4%22%20y%3D%2243.2%22%20width%3D%224.5%22%20height%3D%2213.5%22%20rx%3D%221.8%22%20fill%3D%22%23ffffff%22%2F%3E%3Crect%20x%3D%2227.5%22%20y%3D%2243.1%22%20width%3D%2229%22%20height%3D%2213.7%22%20rx%3D%223%22%20fill%3D%22%23ffffff%22%2F%3E%3C%2Fsvg%3E">
@@ -17,37 +24,67 @@
    คู่ที่อยู่ใน warn band (แดง<->เขียว CVD 6.5-6.9) ใช้ได้เพราะมี secondary
    encoding ครบ: ป้ายตัวเลขติดบนแท่ง + legend + ตารางข้อมูล
    🔴 ห้ามสลับสีตามอันดับ/ตามลำดับที่มาก่อนหลัง — สีผูกกับ "ของสิ่งนั้น" ถาวร
+
+   2026-11-19 ชุด "หน้าปัดนาฬิกา" (Napon ขอให้หรูขึ้น · layout เดิมทั้งหมด)
+   สว่าง = หน้าปัดกระเบื้องขาวเย็น หมึกน้ำเงินเข้ม · มืด = หน้าปัดกลางคืน น้ำเงินลึก ตัวเลขสีงาช้าง
+   --brass = สีทองเหลืองของตัวเรือน ใช้กับ "กรอบ/สถานะเลือก" เท่านั้น ไม่ใช้กับข้อมูล
+   สีข้อมูลโหมดสว่างคงชุดเดิมที่ผ่าน validator · โหมดมืดยกความสว่างขึ้นเพราะพื้นเปลี่ยนเป็นน้ำเงิน
+   contrast (WCAG) คำนวณแล้ว: --muted บน surface 5.2:1 (สว่าง) / 6.5:1 (มืด) · ink 17:1 / 16:1
    =================================================================== */
 :root{
   color-scheme: light;
-  --plane:#f3f3f1; --surface:#fcfcfb; --surface-2:#f3f3f1;
-  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
-  --line:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,.10);
+  --plane:#eceef2; --surface:#ffffff; --surface-2:#f3f4f7;
+  --ink:#151a2d; --ink-2:#454b62; --muted:#61677d;
+  --line:#e3e6ec; --axis:#c5cad6; --ring:rgba(21,26,45,.09);
+  --brass:#86631f; --brass-soft:rgba(178,138,62,.32);
   --solar:#eda100; --batt:#1baf7a; --grid:#e34948; --home:#2a78d6; --export:#4a3aa7;
-  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
-  --shadow:0 1px 2px rgba(11,11,11,.04), 0 8px 24px rgba(11,11,11,.06);
+  --good:#13924f; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --tnum-mix:65%;   /* ตัวเลขสีในการ์ด: ผสมหมึกเข้มให้ผ่าน contrast บนพื้นขาว */
+  --shadow:0 1px 1px rgba(21,26,45,.04), 0 2px 4px rgba(21,26,45,.04), 0 14px 32px -14px rgba(21,26,45,.18);
+  --hi:inset 0 1px 0 rgba(255,255,255,.9);
+  --glow:rgba(237,161,0,.10);
+  /* 2026-11-22 ถอดตัวแปรพื้นไล่สี/ไอคอนจาง (--gl-* · --wm-* · --muted-tint) ของ v3.16.0 ออก */
+  --track:#d3d8e2; --strip-buy:#c4cad6; --strip-empty:#e2e5ec;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     color-scheme: dark;
-    --plane:#0d0d0d; --surface:#1a1a19; --surface-2:#242422;
-    --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
-    --line:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.10);
-    --solar:#c98500; --batt:#199e70; --grid:#e66767; --home:#3987e5; --export:#9085e9;
-    --shadow:none;
+    --plane:#070b16; --surface:#0f1526; --surface-2:#172038;
+    --ink:#f4efe4; --ink-2:#c9c4b8; --muted:#949bb0;
+    --line:#1f2842; --axis:#2e3956; --ring:rgba(214,179,110,.13);
+    --brass:#d6b36e; --brass-soft:rgba(214,179,110,.30);
+    --solar:#d9a21f; --batt:#22ad7d; --grid:#ec6b6b; --home:#4b93ec; --export:#9b91ee;
+    --good:#34b86e;
+    --tnum-mix:78%;
+    --shadow:0 20px 40px -24px rgba(0,0,0,.8);
+    --hi:inset 0 1px 0 rgba(255,255,255,.045);
+    --glow:rgba(214,179,110,.09);
+    --track:#070b16; --strip-buy:#34405f; --strip-empty:#080c18;
   }
 }
 :root[data-theme="dark"]{
   color-scheme: dark;
-  --plane:#0d0d0d; --surface:#1a1a19; --surface-2:#242422;
-  --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
-  --line:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.10);
-  --solar:#c98500; --batt:#199e70; --grid:#e66767; --home:#3987e5; --export:#9085e9;
-  --shadow:none;
+  --plane:#070b16; --surface:#0f1526; --surface-2:#172038;
+  --ink:#f4efe4; --ink-2:#c9c4b8; --muted:#949bb0;
+  --line:#1f2842; --axis:#2e3956; --ring:rgba(214,179,110,.13);
+  --brass:#d6b36e; --brass-soft:rgba(214,179,110,.30);
+  --solar:#d9a21f; --batt:#22ad7d; --grid:#ec6b6b; --home:#4b93ec; --export:#9b91ee;
+  --good:#34b86e;
+  --tnum-mix:78%;
+  --shadow:0 20px 40px -24px rgba(0,0,0,.8);
+  --hi:inset 0 1px 0 rgba(255,255,255,.045);
+  --glow:rgba(214,179,110,.09);
+  --track:#070b16; --strip-buy:#34405f; --strip-empty:#080c18;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;background:var(--plane);color:var(--ink);
-  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Thai",sans-serif}
+  font-family:"IBM Plex Sans Thai",system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Thai",sans-serif;
+  -webkit-font-smoothing:antialiased}
+/* แสงเช้าจาง ๆ ที่ขอบบน — ชั้นเดียว ไม่ขยับ */
+body{background:radial-gradient(900px 420px at 50% -220px,var(--glow),transparent 70%) no-repeat,var(--plane)}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+/* ตัวเลขเด่นจุดเดียวของหน้า (เลขบ้าน + SOC ในวงแหวน) ใช้ Fraunces · ที่เหลือ Plex ทั้งหมด */
+header .bt b,.ring .val b{font-family:"Fraunces","IBM Plex Sans Thai",Georgia,serif;font-optical-sizing:auto}
 body{display:flex;justify-content:center;padding:0 0 env(safe-area-inset-bottom)}
 .app{width:100%;max-width:480px;padding:10px 12px 60px}   /* 2026-09-22 บีบให้พอดีจอ S24U */
 
@@ -56,13 +93,14 @@ header{display:flex;align-items:center;gap:10px;padding:2px 2px 7px}
 /* 2026-09-23 หัวจอแบบ A (Napon เลือก): กล่องไอคอนแดด + เลขบ้าน 2 บรรทัด
    สีไอคอนใช้ --solar ตัวเดียวกับ "แดด" ในผังไฟ ⇒ ไม่เพิ่มสีใหม่เข้าระบบ · สูง 34px ≈ ปุ่ม 32px ไม่ดันการ์ดลง */
 header h1{margin:0;display:flex;align-items:center;gap:9px;white-space:nowrap;min-width:0}
-header .logo{width:34px;height:34px;border-radius:11px;flex-shrink:0;display:grid;place-items:center;
-  color:var(--solar);background:color-mix(in srgb,var(--solar) 16%,transparent);
-  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--solar) 28%,transparent)}
+header .logo{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;
+  color:var(--solar);
+  background:radial-gradient(circle at 50% 35%,color-mix(in srgb,var(--solar) 22%,var(--surface)),var(--surface) 75%);
+  box-shadow:inset 0 0 0 1px var(--brass-soft),0 0 0 3px color-mix(in srgb,var(--brass) 8%,transparent)}
 header .logo svg{width:20px;height:20px}
 header .bt{display:flex;flex-direction:column;line-height:1.05}
-header .bt b{font-size:17px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-header .bt small{font-size:9.5px;font-weight:600;letter-spacing:.16em;color:var(--muted);margin-top:3px}
+header .bt b{font-size:19px;font-weight:600;letter-spacing:-.01em;font-variant-numeric:lining-nums tabular-nums}
+header .bt small{font-size:9.5px;font-weight:600;letter-spacing:.16em;color:var(--brass);margin-top:3px}
 header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:right;line-height:1.35}
 /* 2026-09-22 แคปซูลสถานะ (Napon สั่ง) — เดิมบอกออฟไลน์ด้วยข้อความสีส้มลอย ๆ อ่านผ่านตาได้ง่าย
    จุดกลม + พื้นสีอ่อน ทำให้เห็นสถานะก่อนอ่านตัวหนังสือ · จุดกะพริบเฉพาะตอน Online */
@@ -71,13 +109,15 @@ header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:righ
   background:color-mix(in srgb,var(--sc) 15%,transparent);color:var(--sc)}
 .spill i{width:6px;height:6px;border-radius:50%;background:var(--sc);flex-shrink:0}
 .spill.on{--sc:var(--good)}
-.spill.on i{animation:spdot 2s ease-in-out infinite}
+.spill.on i{animation:none}   /* 2026-11-22 เลิกกะพริบ — สีเขียวบอกสถานะพอแล้ว ของขยับดึงสายตาจากตัวเลข */
 .spill.off{--sc:var(--warn)}
 .spill.wait{--sc:var(--muted)}
 @keyframes spdot{0%,100%{opacity:1}50%{opacity:.25}}
 @media (prefers-reduced-motion:reduce){ .spill.on i{animation:none} }
 .iconbtn{border:1px solid var(--ring);background:var(--surface);color:var(--ink-2);
-  width:32px;height:32px;border-radius:10px;font-size:14px;cursor:pointer;flex-shrink:0}
+  width:38px;height:38px;border-radius:50%;font-size:15px;cursor:pointer;flex-shrink:0;
+  box-shadow:var(--hi);transition:color .2s,border-color .2s,transform .12s}
+.iconbtn:hover{color:var(--brass);border-color:var(--brass-soft)}
 .iconbtn:active{transform:scale(.94)}
 /* 2026-09-22 ปุ่มรีเฟรช (Napon สั่ง) — หมุนระหว่างรอ ไม่งั้นกดแล้วไม่รู้ว่าติดหรือเปล่า
    ปุ่มที่กดแล้วเงียบ = คนกดซ้ำ ซึ่งเปลืองโควตา GAS ที่ตึงอยู่แล้ว */
@@ -85,13 +125,14 @@ header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:righ
 @keyframes btnspin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){ .iconbtn.busy{animation:none} }
 
-.card{background:var(--surface);border:1px solid var(--ring);border-radius:16px;
-  padding:11px 12px;margin-bottom:6px;box-shadow:var(--shadow)}
-.card h2{font-size:12px;font-weight:600;color:var(--ink-2);margin:0 0 2px;
-  letter-spacing:.02em;display:flex;align-items:center;gap:6px}
-.card h2 .badge{margin-left:auto;font-size:10px;font-weight:600;padding:2px 7px;
-  border-radius:999px;background:var(--surface-2);color:var(--ink-2)}
-.card .why{font-size:11px;color:var(--muted);margin:0 0 10px;line-height:1.5}
+.card{background:var(--surface);border:1px solid var(--ring);border-radius:18px;
+  padding:14px 15px;margin-bottom:12px;box-shadow:var(--hi),var(--shadow)}   /* 2026-11-22 padding 12/13→14/15 ให้หายใจ */
+.card h2{font-size:14.5px;font-weight:600;color:var(--ink);margin:0 0 3px;
+  letter-spacing:.01em;display:flex;align-items:center;gap:6px}
+.card h2 .badge{margin-left:auto;font-size:10px;font-weight:500;padding:2px 8px;
+  border-radius:999px;background:transparent;color:var(--brass);
+  box-shadow:inset 0 0 0 1px var(--brass-soft)}
+.card .why{font-size:12px;color:var(--muted);margin:0 0 10px;line-height:1.5}
 
 /* ---------- tabs ---------- */
 .tabs{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;
@@ -100,16 +141,24 @@ header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:righ
   padding-bottom:env(safe-area-inset-bottom)}
 .tabs .inner{display:flex;width:100%;max-width:480px}
 .tabs button{flex:1;border:0;background:none;color:var(--muted);padding:9px 2px 11px;
-  font-size:10.5px;font-weight:500;cursor:pointer;display:flex;flex-direction:column;
-  align-items:center;gap:3px;font-family:inherit}
-.tabs button .g{font-size:17px;line-height:1}
-.tabs button[aria-selected="true"]{color:var(--ink)}
+  font-size:11.5px;font-weight:500;cursor:pointer;display:flex;flex-direction:column;
+  align-items:center;gap:3px;font-family:inherit;position:relative;transition:color .2s}
+.tabs button .g{font-size:17px;line-height:1;transition:transform .2s}
+/* แท็บที่เลือก = ขีดทองเหลืองบนขอบ (เหมือนเข็มชี้) */
+.tabs button::before{content:"";position:absolute;top:-1px;left:50%;width:0;height:2px;
+  border-radius:0 0 2px 2px;background:var(--brass);transform:translateX(-50%);transition:width .25s ease}
+.tabs button[aria-selected="true"]{color:var(--ink);font-weight:600}
+.tabs button[aria-selected="true"]::before{width:28px}
+/* 2026-11-22 แท็บที่เลือกมีพื้นแคปซูลจาง ๆ หลังไอคอน — ขีดทอง 2px อย่างเดียวมองไม่ค่อยเห็นบนมือถือ */
+.tabs button .g{padding:3px 14px;border-radius:999px}   /* ไม่ใส่ transition ที่นี่ — จะทับกฎ reduced-motion ข้างบน */
+.tabs button[aria-selected="true"] .g{background:color-mix(in srgb,var(--brass) 16%,transparent)}
 .tabs button[aria-selected="true"] .g{transform:translateY(-1px)}
+@media (prefers-reduced-motion:reduce){ .tabs button::before,.tabs button .g{transition:none} }
 
 /* ---------- hero ---------- */
 /* 2026-09-22 รอบ 2: 3 คอลัมน์ "กว้างเท่ากัน" ตามที่ Napon สั่งให้สมมาตร
    ของเดิมคอลัมน์ซ้ายเป็น auto (กว้างตามโดนัท) ทำให้ 3 ช่องไม่เท่ากัน */
-.hero{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;align-items:stretch}
+.hero{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;align-items:stretch}
 /* ทุกกล่องในแถบบน: ป้าย/ตัวเลข/ไอคอน จัดกึ่งกลางทั้งแนวตั้งและแนวนอน · ป้ายเป็นตัวหนา */
 .hero .tile{align-items:center;text-align:center}
 .hero .tile .l{font-weight:700;color:var(--ink-2)}
@@ -121,7 +170,7 @@ header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:righ
 /* 2026-09-22 ขยายตัวอักษรส่วนบนทั้งแถบ (Napon สั่ง) — ของเดิมเล็กไปเมื่อเทียบกับการ์ดล่าง */
 .ringWrap{text-align:center}
 .ringWrap .mx{font-size:11.5px;color:var(--muted);margin-top:3px;white-space:nowrap}
-.heroR{min-width:0;display:grid;grid-template-rows:1fr 1fr;gap:6px}
+.heroR{min-width:0;display:grid;grid-template-rows:1fr 1fr;gap:8px}
 .heroR .tile{display:flex;flex-direction:column;justify-content:center;padding:7px 9px}
 .heroR .tile .l{font-size:12px}
 .heroR .tile .v{font-size:22px}
@@ -131,7 +180,7 @@ header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:righ
 .hero > .tile.tb{min-width:0;box-sizing:border-box;display:flex;flex-direction:column;
   justify-content:center;padding:7px 9px}
 .tile.tb .l{white-space:normal;font-size:12px}
-.tile.tb .v{font-size:31px}
+.tile.tb .v{font-size:clamp(22px,6.4vw,30px);letter-spacing:-.035em}   /* 2026-11-19 31→clamp: Plex กว้างกว่าฟอนต์ระบบ "1,850 W" ล้นกล่องที่ 390px */
 .tile.tb .v u{font-size:12px}
 .tile.tb .s{color:var(--tc);margin-top:3px;font-size:11.5px}
 .tile.tb .bsign{font-size:15px;font-weight:700}
@@ -155,41 +204,53 @@ header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:righ
 .ring .val{position:absolute;inset:0;display:flex;flex-direction:column;
   align-items:center;justify-content:center}
 .ring .val .rname{font-size:12.5px;font-weight:700;color:var(--ink-2);line-height:1;margin-bottom:2px}
-.ring .val b{font-size:39px;font-weight:600;line-height:1;letter-spacing:-.02em}
-.ring .val b .pc{font-size:18px;font-weight:600;color:inherit;opacity:.75}
+.ring .val b{font-size:42px;font-weight:500;line-height:1;letter-spacing:-.03em;font-variant-numeric:lining-nums}
+.ring .val b .pc{font-size:18px;font-weight:500;color:inherit;opacity:.7;margin-left:1px}
 .pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;
   padding:4px 11px;border-radius:999px}
 .hero .meta{font-size:12px;color:var(--ink-2);line-height:1.6;margin-top:6px}
 .hero .meta b{font-variant-numeric:tabular-nums}
 
 /* ---------- tiles ---------- */
-.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .tiles.c3{grid-template-columns:1fr 1fr 1fr}
-.tile{background:var(--surface-2);border-radius:12px;padding:9px 11px;min-width:0}
-.tile .l{font-size:10.5px;color:var(--muted);margin-bottom:2px;white-space:nowrap;
+.tile{background:var(--surface-2);border-radius:13px;padding:9px 11px;min-width:0;
+  box-shadow:inset 0 0 0 1px var(--ring)}
+.tile .l{font-size:12px;color:var(--muted);margin-bottom:2px;white-space:nowrap;
   overflow:hidden;text-overflow:ellipsis}
-.tile .v{font-size:19px;font-weight:600;letter-spacing:-.02em;line-height:1.2}
-.tile .v u{font-size:10px;font-weight:500;color:var(--muted);text-decoration:none;margin-left:2px}
-.tile .s{font-size:10px;color:var(--muted);margin-top:2px}
+.tile .v{font-size:19px;font-weight:600;letter-spacing:-.02em;line-height:1.2;font-variant-numeric:tabular-nums}
+.tile .v u{font-size:11px;font-weight:500;color:var(--muted);text-decoration:none;margin-left:2px}
+.tile .s{font-size:11.5px;color:var(--muted);margin-top:2px}
 
 /* สีการ์ดตาม "ความหมาย" ไม่ใช่ตามลำดับ — ใช้สีชุดเดียวกับผังไฟ ⇒ เหลืองในกราฟ = เหลืองในการ์ด = แดด
    🔴 ห้ามสลับสีตามตำแหน่ง/อันดับ · สีผูกกับความหมายถาวร (กฎเดียวกับหัวไฟล์)
    ตัวเลขเป็น 19px ตัวหนา = large text ⇒ เกณฑ์ contrast 3:1 ไม่ใช่ 4.5:1 · ป้ายกับหมายเหตุยังเป็น --muted เหมือนเดิม */
-.tile.t{background:color-mix(in srgb,var(--tc) 9%,var(--surface-2));box-shadow:inset 3px 0 0 var(--tc)}
-.tile.t .v{color:var(--tc)}
+/* 2026-11-19 เลขสีผสมหมึก (--tnum-mix) ให้อ่านง่ายบนพื้นไล่สี */
+.tile.t .v{color:color-mix(in srgb,var(--tc) var(--tnum-mix),var(--ink))}
 .t-good{--tc:var(--batt)}    /* เขียว — ไม่ต้องซื้อไฟ · ประหยัดได้ · มูลค่าที่ได้คืน */
 .t-gen {--tc:var(--solar)}   /* เหลือง — การผลิต */
-.t-self{--tc:var(--home)}    /* น้ำเงิน — พึ่งตัวเอง · ยอดผลิตสะสม */
+.t-self{--tc:var(--home)}    /* น้ำเงิน — พึ่งตัวเอง (%) · 2026-11-22 ยอดผลิตย้ายไปเหลืองแล้ว */
 .t-cost{--tc:var(--grid)}    /* แดง — ซื้อไฟ · ค่าไฟ */
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]) .tile.t{background:color-mix(in srgb,var(--tc) 14%,var(--surface-2))}
-}
-:root[data-theme="dark"] .tile.t{background:color-mix(in srgb,var(--tc) 14%,var(--surface-2))}
+
+/* ---------- ชุด "หน้าปัดสงบ" (2026-11-22 · Napon เลือกแบบผสม หลังปรึกษา Codex) ----------
+   ถอดพื้นไล่สี + ไอคอนจางของ v3.16.0 ออกทั้งชุด — ทุกการ์ดตะโกนเท่ากันจนไม่มีจุดเด่น
+   สีเหลือแค่ 2 ที่: ตัวเลข (.tile.t .v) กับจุดหน้าป้าย (.tile.t .l::before) ⇒ สีบอก "ความหมาย" ไม่ใช่ตกแต่ง
+   จุดเด่นจุดเดียวของหน้า = การ์ดแบต (กรอบทองเหลืองบาง ๆ) · ย้อนกลับ: archive\index-20261122-pre-calm.html */
+.tile.t .l::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--tc);margin-right:5px;vertical-align:1px}
+.hero .tile.t .l::before{display:none}   /* แถบบนจัดกึ่งกลาง จุดทำให้ป้ายเยื้อง */
+.card:has(.hero){box-shadow:var(--hi),inset 0 0 0 1px var(--brass-soft),var(--shadow)}
+
+/* (v3.16.0) ร่องแทร็กให้เข้มกว่าการ์ด — ยังเก็บไว้หลังถอดพื้นไล่สี เพราะร่องชัดกว่า --line เดิม
+   เดิม: ร่องแทร็กกลืนกับพื้นไล่สี ⇒ ทำให้เข้มกว่าการ์ด (override ตัวแปรในขอบเขต ไม่แตะ JS)
+   วงแหวน SOC ใช้ var(--line) · แถบ 24 ชม. ใช้ --line (ซื้อไฟ/นิ่ง) กับ --surface-2 (ยังไม่มีข้อมูล) ทั้งในแถบและ legend */
+.ring{--line:var(--track)}
+.card:has(.strip){--line:var(--strip-buy);--surface-2:var(--strip-empty)}
 
 /* ---------- flow ---------- */
 .flow{display:flex;align-items:stretch;gap:8px;margin-top:4px}
 .node{flex:1;background:var(--surface-2);border-radius:12px;padding:9px 8px;text-align:center}
-.node .n{font-size:10.5px;color:var(--muted)}
+.node .n{font-size:12px;color:var(--muted)}
 .node .w{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .node .w u{font-size:9px;color:var(--muted);text-decoration:none}
 .arrow{display:flex;align-items:center;color:var(--muted);font-size:13px}
@@ -203,13 +264,13 @@ header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:righ
 .pf-dash{fill:none;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:8 14;
   animation:pfrun var(--sp,1.6s) linear infinite}
 @keyframes pfrun{to{stroke-dashoffset:-22}}
-.pf-node{fill:var(--surface-2);stroke:var(--ring);stroke-width:1}
+.pf-node{fill:var(--surface-2);stroke:var(--brass-soft);stroke-width:1}
 .pf-lab{font-size:13px;fill:var(--muted)}
 .pf-val{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
-.pf-u{font-size:10.5px;fill:var(--muted);font-weight:400}
-.pf-rays{transform-box:fill-box;transform-origin:center;animation:pfspin 26s linear infinite}
+.pf-u{font-size:11.5px;fill:var(--muted);font-weight:400}
+.pf-rays{transform-box:fill-box;transform-origin:center}   /* 2026-11-22 เลิกหมุน — เก็บแค่เส้นไฟวิ่งที่บอกทิศจริง */
 @keyframes pfspin{to{transform:rotate(360deg)}}
-.pf-off{opacity:.34}
+.pf-off{opacity:.6}   /* 2026-11-22 .34→.6: 0 W ก็ยังต้องอ่านออก */
 /* เคารพคนที่ปิดแอนิเมชันในระบบ — เส้นประยังอยู่ แค่ไม่วิ่ง จึงยังอ่านออกว่าเส้นไหนมีไฟ */
 @media (prefers-reduced-motion:reduce){
   .pf-dash,.pf-rays{animation:none}
@@ -220,8 +281,8 @@ header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:righ
    เขียว = ชาร์จเข้าแบต · ส้ม = ดึงไฟจากแบต · ไม่ลงสี = ซื้อไฟ/นิ่ง (ตามที่สั่ง)
    สีเขียว/ส้ม ยืมโทนจากชุดเดิมของแอป ไม่ได้เพิ่มสีใหม่เข้าจาน */
 .strip svg{display:block;width:100%;height:auto}
-.strip .hr{font-size:9.5px;fill:var(--muted)}
-.stripLeg{display:flex;gap:12px;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--ink-2)}
+.strip .hr{font-size:10.5px;fill:var(--muted)}
+.stripLeg{display:flex;gap:12px;justify-content:space-between;margin-top:6px;font-size:12px;color:var(--ink-2)}
 .stripLeg span{display:inline-flex;align-items:center;gap:5px}
 .stripLeg i{width:10px;height:10px;border-radius:2.5px;flex-shrink:0}
 
@@ -229,19 +290,19 @@ header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:righ
 .chart{position:relative;width:100%;touch-action:pan-y}
 .chart svg{display:block;width:100%;overflow:visible}
 .tip{position:absolute;pointer-events:none;background:var(--surface);
-  border:1px solid var(--ring);border-radius:9px;padding:6px 9px;font-size:11px;
-  box-shadow:0 4px 16px rgba(0,0,0,.14);z-index:5;opacity:0;transition:opacity .1s;
+  border:1px solid var(--brass-soft);border-radius:10px;padding:6px 10px;font-size:11px;
+  box-shadow:0 10px 28px -10px rgba(7,11,22,.35);z-index:5;opacity:0;transition:opacity .1s;
   white-space:nowrap;line-height:1.6}
 .tip.on{opacity:1}
 .tip b{font-variant-numeric:tabular-nums}
-.legend{display:flex;flex-wrap:wrap;gap:4px 13px;font-size:11px;color:var(--ink-2);margin-top:9px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 13px;font-size:12px;color:var(--ink-2);margin-top:9px}
 .legend i{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:5px;
   vertical-align:-1px;font-style:normal}
 
 /* ---------- balance bars ---------- */
 .bal{margin-top:11px}
 .bal .row{margin-bottom:11px}
-.bal .cap{display:flex;font-size:11px;color:var(--muted);margin-bottom:5px}
+.bal .cap{display:flex;font-size:12px;color:var(--muted);margin-bottom:5px}
 .bal .cap b{margin-left:auto;color:var(--ink);font-variant-numeric:tabular-nums}
 .bal .track{display:flex;height:30px;gap:2px;border-radius:7px;overflow:hidden}
 .bal .seg{display:flex;align-items:center;justify-content:center;font-size:10.5px;
@@ -249,13 +310,13 @@ header .stamp{font-size:11px;color:var(--muted);margin-left:auto;text-align:righ
 .bal .seg.dim{background:var(--line)!important;color:var(--ink-2)}
 
 /* ---------- misc ---------- */
-.recon{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-2);
+.recon{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-2);
   background:var(--surface-2);border-radius:9px;padding:7px 10px;margin-top:10px;line-height:1.5}
 .recon .st{font-weight:700;flex-shrink:0}
-.note{font-size:10.5px;color:var(--muted);line-height:1.6;margin-top:9px}
-table{width:100%;border-collapse:collapse;font-size:11px;font-variant-numeric:tabular-nums}
+.note{font-size:12px;color:var(--muted);line-height:1.6;margin-top:9px}
+table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
 th,td{padding:5px 4px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
-th{color:var(--muted);font-weight:500;font-size:10px}
+th{color:var(--muted);font-weight:500;font-size:11px}
 th:first-child,td:first-child{text-align:left}
 details>summary{font-size:11px;color:var(--ink-2);cursor:pointer;padding:7px 0;list-style:none}
 details>summary::-webkit-details-marker{display:none}
@@ -270,27 +331,218 @@ details[open]>summary::before{content:"▾ "}
 .seg-ctl{display:flex;gap:4px;background:var(--surface-2);padding:3px;border-radius:11px}
 .seg-ctl button{flex:1;border:0;background:none;color:var(--ink-2);font-family:inherit;
   font-size:11.5px;padding:7px 2px;border-radius:9px;cursor:pointer;white-space:nowrap}
+.seg-ctl button{transition:color .2s,background-color .2s}
 .seg-ctl button.on{background:var(--surface);color:var(--ink);font-weight:600;
-  box-shadow:0 1px 2px rgba(0,0,0,.10)}
+  box-shadow:inset 0 0 0 1px var(--brass-soft),0 1px 2px rgba(7,11,22,.10)}
 .btn{border:1px solid var(--ring);background:var(--surface-2);color:var(--ink);
   font-family:inherit;font-size:12px;padding:9px 14px;border-radius:11px;cursor:pointer;
-  margin:0 8px 8px 0}
+  margin:0 8px 8px 0;transition:border-color .2s,transform .12s}
+.btn:hover{border-color:var(--brass-soft)}
 .btn:active{transform:scale(.97)}
-.btn.pri{background:var(--home);border-color:var(--home);color:#fff;font-weight:600}
+.btn.pri{background:var(--ink);border-color:var(--ink);color:var(--surface);font-weight:600}
 .empty{font-size:12px;color:var(--muted);text-align:center;padding:22px 8px;line-height:1.7}
 .err{color:var(--crit);font-size:12px;line-height:1.7;word-break:break-word}
 .skel{height:13px;border-radius:5px;background:var(--surface-2);animation:p 1.3s infinite}
 @keyframes p{50%{opacity:.45}}
+
+/* ===================================================================
+   2026-11-22 v3.18.0 ชุด "Boreal Observatory" (Napon เลือกแบบ 5 จาก mockup ของ Codex)
+   กระจกควัน + แสงออโรราเขียวหยก + เส้นเครื่องมือบาง ๆ · บล็อกนี้วาง "ท้ายสุด" ⇒ ทับค่าข้างบนทั้งหมด
+   palette จาก Codex `docs\design-codex-20261122-hitech\directions-2.md` แบบ 5 ยกเว้น 2 จุด:
+     --home มืด #BCD8D4 (สเปก) ไม่ใช่สีส้มอย่างใน prototype — ส้มชนกับ --solar ในกราฟ "แดดผลิต vs บ้านใช้"
+     --brass ใช้เป็น "สีหยกประจำแบรนด์" (ชื่อตัวแปรเดิม เพื่อไม่ต้องไล่แก้ทุก selector)
+   ย้อนกลับ: archive\index-20261122-pre-boreal.html
+   =================================================================== */
+:root{
+  --plane:#EEF2EB; --surface:#FFFFFF; --surface-2:#f2f6f1;
+  --ink:#20312C; --ink-2:#3d524b; --muted:#5a6d66;
+  --line:#dce5df; --axis:#c2cec7; --ring:rgba(32,49,44,.11); --hair:rgba(32,49,44,.28);
+  --brass:#386653; --brass-soft:rgba(56,102,83,.30);
+  --solar:#a87434; --batt:#3d7a4c; --grid:#a5554c; --home:#3B6662; --export:#6a5fa8;
+  --good:#2f7a55; --pearl:#ffffff;
+  --orb-hi:#ffffff; --orb-lo:#e3ebe5;
+  --glow:rgba(56,102,83,.10);
+  --aurora:rgba(56,102,83,.10);
+  --shadow:0 1px 2px rgba(32,49,44,.05),0 16px 32px -18px rgba(32,49,44,.25);
+  --hi:inset 0 1px 0 rgba(255,255,255,.9);
+  --track:#d6e0d9; --strip-buy:#c9d4cd; --strip-empty:#e8eee9;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --plane:#0d1112; --surface:#172420; --surface-2:#1f2f2a;
+    --ink:#EDF1E8; --ink-2:#c6d1ca; --muted:#93a59c;
+    --line:#26362f; --axis:#33463f; --ring:rgba(205,220,214,.14); --hair:rgba(220,232,226,.38);
+    --brass:#8ECDB4; --brass-soft:rgba(142,205,180,.35);
+    --solar:#D6AF82; --batt:#A7D0AD; --grid:#DBA39B; --home:#BCD8D4; --export:#b9b0e0;
+    --good:#8ECDB4; --pearl:#f4efe4;
+    --orb-hi:#2c3e39; --orb-lo:#101917;
+    --glow:rgba(142,205,180,.12); --aurora:rgba(142,205,180,.16);
+    --shadow:0 24px 40px -24px rgba(0,0,0,.85);
+    --hi:inset 0 1px 0 rgba(255,255,255,.05);
+    --track:#0e1714; --strip-buy:#3a4a44; --strip-empty:#111a17;
+  }
+}
+:root[data-theme="dark"]{
+  --plane:#0d1112; --surface:#172420; --surface-2:#1f2f2a;
+  --ink:#EDF1E8; --ink-2:#c6d1ca; --muted:#93a59c;
+  --line:#26362f; --axis:#33463f; --ring:rgba(205,220,214,.14); --hair:rgba(220,232,226,.38);
+  --brass:#8ECDB4; --brass-soft:rgba(142,205,180,.35);
+  --solar:#D6AF82; --batt:#A7D0AD; --grid:#DBA39B; --home:#BCD8D4; --export:#b9b0e0;
+  --good:#8ECDB4; --pearl:#f4efe4;
+  --orb-hi:#2c3e39; --orb-lo:#101917;
+  --glow:rgba(142,205,180,.12); --aurora:rgba(142,205,180,.16);
+  --shadow:0 24px 40px -24px rgba(0,0,0,.85);
+  --hi:inset 0 1px 0 rgba(255,255,255,.05);
+  --track:#0e1714; --strip-buy:#3a4a44; --strip-empty:#111a17;
+}
+/* พื้นหลัง: ออโรราจาง 2 จุด (นิ่ง ไม่ขยับ) */
+body{background:
+  radial-gradient(760px 420px at 85% -140px,var(--aurora),transparent 70%) no-repeat,
+  radial-gradient(520px 420px at -10% 38%,var(--glow),transparent 70%) no-repeat,var(--plane)}
+/* ตัวเลข = Sora (ไม่มีอักษรไทย ⇒ ตกไป Plex Thai เอง) */
+header .bt b,.ring .val b,.tile .v,.pf-val{font-family:"Sora","IBM Plex Sans Thai",system-ui,sans-serif}
+header .bt b{font-weight:500;font-size:21px;letter-spacing:.01em}
+header .bt small{font-size:8.5px;font-weight:500;letter-spacing:.12em;color:var(--muted)}   /* "TRISON DEYE SOLAR" ยาวขึ้น ⇒ ช่องไฟแคบลง ไม่ให้ชนปุ่ม (วัดที่ 390px) */
+header{gap:8px}
+header .iconbtn{width:34px;height:34px}
+header .stamp{font-size:10.5px;white-space:nowrap}
+header .logo{width:38px;height:38px;color:var(--solar);
+  background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--solar) 18%,var(--surface)),var(--surface) 75%);
+  box-shadow:inset 0 0 0 1px var(--hair)}
+header .logo svg{width:28px;height:28px}
+.iconbtn{background:color-mix(in srgb,var(--surface) 80%,transparent);border-color:var(--brass-soft);color:var(--brass)}
+.iconbtn:hover{color:var(--ink);border-color:var(--brass)}
+:focus-visible{outline-color:var(--brass)}
+/* การ์ด = กระจกควัน: ขอบเส้นผม + แสงหยกมุมขวาบน */
+.card{border-radius:16px;border:1px solid var(--ring);
+  background:radial-gradient(380px 200px at 88% 0%,var(--aurora),transparent 70%),var(--surface);
+  box-shadow:var(--hi),var(--shadow)}
+.card:has(.hero){box-shadow:var(--hi),var(--shadow)}
+.card:has(.pflow){background:
+  radial-gradient(420px 220px at 75% 25%,var(--aurora),transparent 70%),
+  radial-gradient(300px 200px at 15% 90%,var(--glow),transparent 70%),var(--surface)}
+.card h2{font-weight:500;letter-spacing:.02em}
+.card h2 .badge{color:var(--brass);box-shadow:inset 0 0 0 1px var(--brass-soft)}
+.tile{border-radius:12px;background:color-mix(in srgb,var(--surface-2) 70%,transparent);box-shadow:inset 0 0 0 1px var(--ring)}
+.tile .v{font-weight:500;letter-spacing:-.01em}
+.ring .val b{font-weight:500;font-size:38px;letter-spacing:-.02em}
+.ring .val b .pc{font-size:16px}
+.ring .val .rname{font-weight:500;letter-spacing:.04em}
+.tabs{background:color-mix(in srgb,var(--plane) 86%,transparent)}
+.tabs button::before{background:var(--brass)}
+.tabs button[aria-selected="true"] .g{background:color-mix(in srgb,var(--brass) 18%,transparent);color:var(--brass)}
+.seg-ctl button.on{box-shadow:inset 0 0 0 1px var(--brass-soft)}
+.btn.pri{background:var(--brass);border-color:var(--brass);color:var(--plane)}
+.spill.on i{animation:spdot 2.4s ease-in-out infinite}   /* จุด Online กลับมาหายใจ (ล้ำ ≠ นิ่ง) */
+.strip svg rect{rx:3px}
+
+/* ---------- ผังไฟ Boreal ---------- */
+.pflow svg{max-width:400px;overflow:visible}
+.pf-deco{fill:none;stroke:var(--hair);stroke-opacity:.3;stroke-width:1}
+.pf-track{fill:none;stroke:var(--track);stroke-width:3;stroke-linecap:round}
+.pf-haze{fill:none;stroke-width:8;stroke-linecap:round}
+.pf-core{fill:none;stroke-width:1.2;stroke-linecap:round}
+.pf-lab{font-size:12.5px;fill:var(--muted)}
+.pf-val{font-size:20px;font-weight:500;fill:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.pf-u{font-size:12px;fill:var(--muted)}
+.pf-hubt{font:500 10.5px "Sora","IBM Plex Sans Thai",sans-serif;letter-spacing:.2em;fill:var(--brass)}
+.pf-halo{opacity:0}
+.pf-on .pf-halo{animation:pfbr 2.8s ease-in-out infinite}
+@keyframes pfbr{0%,100%{opacity:.04}50%{opacity:.2}}
+.pf-off{opacity:.55}
+.pf-aura{opacity:.12;animation:pfau 2.6s ease-in-out infinite}
+@keyframes pfau{0%,100%{opacity:.08}50%{opacity:.26}}
+.pf-spin,.pf-orbit{transform-box:fill-box;transform-origin:center;animation:pfsp 16s linear infinite}
+.pf-orbit{animation-duration:9s}
+@keyframes pfsp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){ .pf-on .pf-halo,.pf-aura,.pf-spin,.pf-orbit,.spill.on i{animation:none} }
+
+/* ---------- v3.18.1 หัวจอ 2 แถวแบบ mock ----------
+   แถว 1: ตราแดด · เส้นคั่นตั้ง · บ้าน+88/318 ตัวใหญ่ · แบรนด์ช่องไฟกว้าง · ปุ่มกลมขอบหยก
+   แถว 2: Online | อัปเดต | คลัง (สถานะเต็มความกว้าง · .sep มาจาก JS) */
+header{flex-wrap:wrap;gap:0 10px;padding:4px 2px 10px}
+header h1{margin-right:auto;gap:12px}
+header .logo{width:58px;height:58px;background:none;box-shadow:none;border-radius:0}
+header .logo svg{width:58px;height:58px;overflow:visible}
+header .vbar{width:1px;align-self:stretch;margin:4px 0;background:var(--hair);opacity:.7}
+header .bt{line-height:1.05}
+header .bt b{display:flex;align-items:center;gap:8px;font-size:30px;font-weight:400;letter-spacing:.01em}
+header .bt b .hh{width:22px;height:22px;color:var(--ink-2);flex-shrink:0}
+header .bt small{font-size:9.5px;font-weight:400;letter-spacing:.34em;margin-top:6px;color:var(--ink-2)}
+header .iconbtn{width:42px;height:42px;font-size:17px;border:1px solid var(--brass-soft);
+  background:radial-gradient(circle at 50% 30%,color-mix(in srgb,var(--brass) 14%,var(--surface)),var(--surface) 80%)}
+header .stamp{order:9;flex-basis:100%;margin:12px 0 0;text-align:left;display:flex;align-items:center;
+  justify-content:space-between;gap:10px;font-size:12.5px;line-height:1.3;color:var(--ink-2);white-space:nowrap}
+header .stamp .sep{width:1px;height:18px;background:var(--hair);opacity:.7;flex-shrink:0}
+header .stamp .spill{font-size:12px;padding:4px 12px 4px 10px;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--sc) 55%,transparent)}
+header .stamp .spill i{width:7px;height:7px}
+header .stamp br{display:none}   /* ข้อความ Offline/ซ่อมคลัง ยังใช้ <br> — ในแถวนอนให้ต่อกันด้วยช่องว่างแทน */
+
+/* ---------- v3.18.1 พื้นหลังออโรรา (Napon: "สี background มีเฉดๆ แบบ mock ด้วยก็ดี ชอบมาก") ----------
+   แถบแสงทแยงจาง ๆ 2 แถบ + จุดเรือง ⇒ ทั้งพื้นหน้าและในการ์ด · นิ่ง ไม่ขยับ (ไม่กิน CPU) */
+:root{--band:rgba(56,102,83,.07)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){--band:rgba(142,205,180,.10)} }
+:root[data-theme="dark"]{--band:rgba(142,205,180,.10)}
+body{background:
+  linear-gradient(158deg,transparent 18%,var(--band) 30%,transparent 44%) no-repeat,
+  linear-gradient(200deg,transparent 52%,var(--band) 64%,transparent 78%) no-repeat,
+  radial-gradient(760px 420px at 85% -140px,var(--aurora),transparent 70%) no-repeat,
+  radial-gradient(520px 420px at -10% 38%,var(--glow),transparent 70%) no-repeat,var(--plane);
+  background-attachment:scroll}
+.card{background:
+  linear-gradient(162deg,transparent 30%,var(--band) 48%,transparent 66%),
+  radial-gradient(380px 200px at 88% 0%,var(--aurora),transparent 70%),var(--surface)}
+.card:has(.pflow){background:
+  linear-gradient(150deg,transparent 22%,var(--band) 38%,transparent 52%),
+  linear-gradient(205deg,transparent 48%,var(--band) 62%,transparent 76%),
+  radial-gradient(420px 220px at 75% 25%,var(--aurora),transparent 70%),
+  radial-gradient(300px 200px at 15% 90%,var(--glow),transparent 70%),var(--surface)}
+.strip .hr{font-size:11px;fill:var(--ink-2)}
+
+/* ---------- v3.18.2 แดดเคลื่อนไหว ---------- */
+.pf-rayL,.pf-rayS,.pf-sunglow{transform-box:fill-box;transform-origin:center}
+.pf-rayL{animation:pfsp 40s linear infinite}
+.pf-rayS{animation:pfsp 28s linear infinite reverse}
+.pf-sunglow{animation:pfsun 3.6s ease-in-out infinite}
+@keyframes pfsun{0%,100%{transform:scale(.92);opacity:.75}50%{transform:scale(1.12);opacity:1}}
+@media (prefers-reduced-motion:reduce){ .pf-rayL,.pf-rayS,.pf-sunglow{animation:none} }
+
+/* ---------- v3.18.2 บีบให้ S24 (412×915) เห็นครบทั้งหน้า "ตอนนี้" ----------
+   ก่อนบีบวัดได้เกินจอ 93 px (412) · 162 px (390) · หัวจอตกเป็น 3 แถวที่ 360 */
+header{padding:2px 2px 6px;gap:0 8px}
+header h1{gap:10px}
+header .logo,header .logo svg{width:44px;height:44px}
+header .bt b{font-size:26px;gap:6px}
+header .bt b .hh{width:19px;height:19px}
+header .bt small{letter-spacing:.3em;margin-top:4px;font-size:9px}
+header .iconbtn{width:38px;height:38px;font-size:16px}
+header .stamp{margin-top:7px;font-size:12px}
+.card{padding:12px 14px;margin-bottom:10px}
+.ring{width:124px;height:124px}
+.ring .val b{font-size:35px}
 </style>
 </head>
 <body>
 <div class="app">
   <header>
-    <h1 aria-label="88/318 Deye Solar">
-      <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-        <circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none"/>
-        <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg></span>
-      <span class="bt"><b>88/318</b><small>DEYE SOLAR</small></span>
+    <h1 aria-label="88/318 Trison Deye Solar">
+      <!-- 2026-11-22 v3.18.1 ตราหัวจอแบบ mock (Napon: "Title ใน mock ทำได้ดีกว่ามาก"):
+           ดวงอาทิตย์ทรงกลมมีมิติ + วงโคจรไขว้ 2 วง + ดาวเล็กบนวง · ไม่มีกรอบวงกลมล้อม -->
+      <span class="logo" aria-hidden="true"><svg viewBox="0 0 64 64" fill="none" stroke-linecap="round">
+        <defs>
+          <radialGradient id="hdSun" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#fff4e0"/><stop offset=".5" stop-color="#f0c48c"/><stop offset="1" stop-color="#b77a44"/></radialGradient>
+          <radialGradient id="hdGlow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#f3c58e" stop-opacity=".55"/><stop offset="1" stop-color="#f3c58e" stop-opacity="0"/></radialGradient>
+        </defs>
+        <circle cx="32" cy="32" r="22" fill="url(#hdGlow)"/>
+        <ellipse cx="32" cy="32" rx="30" ry="10" stroke="var(--solar)" stroke-width="1" opacity=".75" transform="rotate(-18 32 32)"/>
+        <ellipse cx="32" cy="32" rx="27" ry="8" stroke="var(--hair)" stroke-width=".8" transform="rotate(28 32 32)"/>
+        <path stroke="var(--solar)" stroke-width="1.6" d="M32 10v6M32 48v6M10 32h6M48 32h6M16.4 16.4l4.2 4.2M43.4 43.4l4.2 4.2M16.4 47.6l4.2-4.2M43.4 20.6l4.2-4.2"/>
+        <path stroke="var(--solar)" stroke-width="1" opacity=".7" d="M23.6 12.4l1.4 3.4M40.4 12.4l-1.4 3.4M12.4 23.6l3.4 1.4M12.4 40.4l3.4-1.4M23.6 51.6l1.4-3.4M40.4 51.6l-1.4-3.4M51.6 23.6l-3.4 1.4M51.6 40.4l-3.4-1.4"/>
+        <circle cx="32" cy="32" r="9" fill="url(#hdSun)"/>
+        <ellipse cx="29" cy="28.5" rx="3.2" ry="2.2" fill="#fff" opacity=".55"/>
+        <circle cx="4.6" cy="40.4" r="1.6" fill="var(--solar)"/><circle cx="56" cy="14" r="1.3" fill="var(--hair)"/></svg></span>
+      <span class="vbar" aria-hidden="true"></span>
+      <span class="bt"><b><svg class="hh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.8V20h13V9.8M10 20v-5.5h4V20"/></svg>88/318</b><small>TRISON DEYE SOLAR</small></span>
     </h1>
     <button class="iconbtn" id="btnRe" title="ดึงข้อมูลใหม่">↻</button>
     <button class="iconbtn" id="btnTheme" title="สลับธีม">◐</button>
@@ -767,9 +1019,13 @@ function ring(soc){
   var R=48, C=2*Math.PI*R, pct=(soc===null?0:Math.max(0,Math.min(100,soc)));
   var col = socColor(soc);
   // 2026-09-22 ปล่อยให้ CSS คุมขนาดกล่อง (ย่อโดนัทลงโดยไม่ต้องแก้ค่าในนี้)
-  return '<div class="ring"><svg viewBox="0 0 108 108" width="100%" height="100%">'+
-    '<circle cx="54" cy="54" r="'+R+'" fill="none" stroke="var(--line)" stroke-width="9"/>'+
-    '<circle cx="54" cy="54" r="'+R+'" fill="none" stroke="'+col+'" stroke-width="9" stroke-linecap="round"'+
+  // 2026-11-22 v3.18.0 Boreal: วงบางลง 9→6 + ขีด 4 ทิศนอกวง (หน้าปัดหอดูดาว) + แสงฟุ้งใต้เส้น SOC
+  return '<div class="ring"><svg viewBox="0 0 108 108" width="100%" height="100%" overflow="visible">'+
+    '<path d="M54 1 V4.5 M54 103.5 V107 M1 54 H4.5 M103.5 54 H107" stroke="var(--hair)" stroke-width="1.2" stroke-linecap="round"/>'+
+    '<circle cx="54" cy="54" r="'+R+'" fill="none" stroke="var(--line)" stroke-width="6"/>'+
+    '<circle cx="54" cy="54" r="'+R+'" fill="none" stroke="'+col+'" stroke-width="7" stroke-opacity=".35" stroke-linecap="round"'+
+    ' stroke-dasharray="'+(C*pct/100).toFixed(1)+' '+C.toFixed(1)+'" transform="rotate(-90 54 54)" style="filter:blur(3px)"/>'+
+    '<circle cx="54" cy="54" r="'+R+'" fill="none" stroke="'+col+'" stroke-width="6" stroke-linecap="round"'+
     ' stroke-dasharray="'+(C*pct/100).toFixed(1)+' '+C.toFixed(1)+'" transform="rotate(-90 54 54)"/>'+
     // 2026-09-22 รอบ 2: "Battery" กลับเข้ามาอยู่ "เหนือตัวเลข %" ในโดนัท
     //            เพราะตอนวางไว้ซ้ายการ์ด เหลือที่ว่างเยอะเกิน (Napon สั่ง)
@@ -790,96 +1046,203 @@ function ring(soc){
      - เส้นเปลี่ยนจากทแยงเป็น "หักฉาก" แนวนอน+แนวดิ่ง และหนาขึ้น
    🔑 ฮับเป็นสี่เหลี่ยม ไม่ใช่วงกลม เพราะต้องมีจุดเข้า 4 จุดแยกกัน
       ถ้าใช้วงกลม เส้นซ้ายบน/ซ้ายล่างจะวิ่งทับกันจนแยกไม่ออกว่าอันไหนคืออันไหน */
-var PF_R = 26;
-/* 2026-09-22 รอบ 4 (Napon สั่ง "ลดขนาดผังลงนิดนึง ให้ fit ขึ้น แต่ห้ามกระทบไอคอน"):
-   บีบเฉพาะ "ช่องว่างแนวตั้ง" — แถวบน/ล่างขยับเข้าหาฮับข้างละ 10 หน่วย
-   ⇒ viewBox สูง 224 -> 204 (-9%) · ความกว้างคง 372 เท่าเดิม
-   🔑 ไอคอนไม่เล็กลงสักตัว เพราะ svg สเกลตาม "ความกว้าง" (width:100% + viewBox กว้างเท่าเดิม)
-      และ PF_R / scale(1.25) ของไอคอนยังเป็นค่าเดิมทั้งคู่ — ที่หายไปคือที่ว่างล้วน ๆ */
-var PF_VB  = { w:372, h:204 };
-var PF_HUB = { x:186, y:102, w:46, h:50 };          // กึ่งกลาง + ขนาดกล่องฮับ
-var PF_POS = { sun:[118,40], grid:[254,40], batt:[118,164], home:[254,164] };
-/* ทางเดินของแต่ละเส้น เรียงจาก "โหนด -> ฮับ" · คนละ corridor กัน ไม่ทับกันสักเส้น */
-/* 2026-09-22 รอบ 3 (Napon สั่ง): "แดด" กับ "กริด" กลับไปเป็นเส้นเฉียงแบบเดิม
-   ส่วน "แบต" กับ "บ้าน" คงเป็นหักฉาก ⇒ ผังผสม 2 แบบตามที่สั่ง
-   viewBox 344 -> 372 อีกรอบ เพราะฟอนต์ใหญ่ขึ้น ต้องการช่องข้อความ 82 หน่วย (เดิม 68)
-   ไม่งั้น "3,200 W" ที่ 19px จะล้นออกนอกกรอบ
-   🔴 รอบ 4 เปลี่ยนจากเลขตายตัว (184/137) มาคำนวณจาก PF_POS/PF_HUB
-      เพราะเลขตายตัวแปลว่าขยับโหนดทีไรต้องไล่แก้ 2 ที่ ลืมที่ใดที่หนึ่ง = เส้นลอยไม่ต่อกล่องฮับ */
-var PF_PATH = (function(){
-  var hb = PF_HUB.y + PF_HUB.h/2;                   // ขอบล่างของกล่องฮับ
-  return {
-    batt: [[PF_POS.batt[0]+PF_R, PF_POS.batt[1]], [PF_HUB.x-11, PF_POS.batt[1]], [PF_HUB.x-11, hb]],
-    home: [[PF_POS.home[0]-PF_R, PF_POS.home[1]], [PF_HUB.x+11, PF_POS.home[1]], [PF_HUB.x+11, hb]]
-  };
-})();
+/* 2026-11-22 v3.18.0 ชุด "Boreal Observatory" (Napon เลือกแบบ 5 จาก mockup ของ Codex · ผ่าน prototype-flow.html)
+   ผังใหม่ (Napon สั่ง): แดดด้านบนเยื้องซ้าย ~75° · กริดขวาบน 45° · บ้านขวาล่าง · แบตซ้ายล่าง · ป้าย INVERTER ใต้ฮับ
+   เส้นไฟ = ร่องจาง + แสงฟุ้ง + เส้นแกนบาง · อนุภาคสีมุก 4 เม็ดหางยาววิ่งตามเส้นด้วย requestAnimationFrame (pfStart)
+   🔑 กติกาเดิมทั้งหมดยังอยู่: ทิศอ่านจากเครื่องหมายค่าจริง · ต่ำกว่า 20 W = นิ่ง (ไม่มีอนุภาค) · ยิ่งวัตต์สูงยิ่งวิ่งเร็ว
+   🔴 เส้นทุกเส้นเก็บเป็น "โหนด -> ฮับ" · ไฟไหลกลับทาง = อนุภาคเดินถอยหลังบนเส้นเดิม (data-rev) */
+/* v3.18.2 (Napon: "เอาให้เปิดได้ใน S24 พอดี"): ผังเตี้ยลง 270 -> 230 · ขยับแบต/บ้าน/ฮับขึ้น · ขนาดไอคอนเท่าเดิม */
+var PF_VB  = { w:372, h:230 };
+var PF_HUB = { x:186, y:118 };
+var PF_POS = { sun:[158,34], grid:[278,52], batt:[46,184], home:[306,190] };
+var PF_PATH = {
+  sun :"M162 60 C152 76 184 80 181 92",
+  grid:"M260 70 C246 86 222 82 207 98",
+  batt:"M60 172 C90 156 130 158 164 134",
+  home:"M280 202 C250 204 228 164 208 136"
+};
+/* ตำแหน่งป้าย [x, y, text-anchor] — บ้านวางป้ายเหนือรูป เพราะเส้นเข้าจากซ้ายจะพาดทับถ้าวางข้าง ๆ */
+var PF_LAB = { sun:[124,28,"end"], grid:[302,46,"start"], batt:[72,178,"start"], home:[306,140,"middle"] };
+/* อนุภาค: จำนวนต่อเส้น · ความยาวหาง (จุด) · ระยะห่างจุดหาง (px) · รัศมีหัว · ความเร็ว px/s = v0 + v1*q (q = |W|/3000 สูงสุด 1) */
+var PF_FX = { n:4, tail:12, gap:1.4, head:1.9, v0:13, v1:56 };
+var PF_REDUCE = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
-/** เส้นเฉียง: จากขอบโหนดตรงไปขอบกล่องฮับ — คำนวณจุดตัดกับกรอบสี่เหลี่ยมของฮับ
- *  คืนค่าเรียง "โหนด -> ฮับ" (กลับ array เมื่อไฟไหลอีกทาง เหมือนเส้นหักฉาก) */
-function pfDiag(n){
-  var hx=PF_HUB.x, hy=PF_HUB.y, dx=n[0]-hx, dy=n[1]-hy;
-  var L=Math.sqrt(dx*dx+dy*dy), ux=dx/L, uy=dy/L;
-  var t=Math.min((PF_HUB.w/2+4)/Math.abs(dx), (PF_HUB.h/2+4)/Math.abs(dy));
-  return [[ +(n[0]-ux*(PF_R+4)).toFixed(1), +(n[1]-uy*(PF_R+4)).toFixed(1) ],
-          [ +(hx+dx*t).toFixed(1),          +(hy+dy*t).toFixed(1) ]];
-}
-PF_PATH.sun  = pfDiag(PF_POS.sun);
-PF_PATH.grid = pfDiag(PF_POS.grid);
-
-/** pts = ทางเดินเรียงตามทิศไฟจริง (กลับด้าน array = กลับทิศวิ่ง) */
-function pfEdge(pts, col, watt){
-  var d = 'M'+pts[0][0]+' '+pts[0][1];
-  for(var i=1;i<pts.length;i++) d += 'L'+pts[i][0]+' '+pts[i][1];
-  var s = '<path class="pf-line" d="'+d+'" stroke="'+col+'"/>';
-  if(watt!==null && watt!==undefined && !isNaN(watt) && Math.abs(watt)>=20){
-    // 3000 W -> ~0.55s (เร็ว) · 100 W -> ~2.9s (ช้า) — เห็นความต่างของกำลังไฟได้จากจังหวะ
-    var sp = Math.max(0.55, Math.min(3.0, 3.0 - Math.abs(watt)/1150));
-    s += '<path class="pf-dash" d="'+d+'" stroke="'+col+'" style="--sp:'+sp.toFixed(2)+'s"/>';
-  }
-  return s;
+function pfEdge(k, col, watt, rev){
+  var d = PF_PATH[k], live = watt!==null && watt!==undefined && !isNaN(watt) && Math.abs(watt)>=20;
+  return '<path class="pf-track" d="'+d+'"/>'
+    + '<path class="pf-haze" d="'+d+'" stroke="'+col+'" style="stroke-opacity:'+(live?.2:.04)+'" filter="url(#pfBlur)"/>'
+    + '<path class="pf-core" d="'+d+'" stroke="'+col+'" style="stroke-opacity:'+(live?.85:.22)+'"'
+    + (live ? ' data-w="'+Math.abs(watt)+'" data-rev="'+(rev?1:0)+'" data-col="'+col+'"' : '') + '/>';
 }
 
-/** side = "left" -> ตัวหนังสืออยู่ซ้ายของไอคอน (ชิดขวา) · "right" -> อยู่ขวา (ชิดซ้าย) */
-function pfNode(p, icon, label, val, col, on, side){
-  var left = (side === "left");
-  var tx = left ? (p[0]-PF_R-10) : (p[0]+PF_R+10);
-  var anc = left ? "end" : "start";
-  return '<g class="'+(on?'':'pf-off')+'">'
-    + '<circle class="pf-node" cx="'+p[0]+'" cy="'+p[1]+'" r="'+PF_R+'"/>'
-    + '<g transform="translate('+(p[0]-20)+','+(p[1]-20)+') scale(1.25)">'+icon+'</g>'
-    + '<text class="pf-lab" x="'+tx+'" y="'+(p[1]-4)+'" text-anchor="'+anc+'">'+label+'</text>'
-    + '<text class="pf-val" x="'+tx+'" y="'+(p[1]+15)+'" text-anchor="'+anc+'" fill="'+col+'">'
+function pfNode(k, icon, label, val, col, on){
+  // v3.18.1: ขนาด/จุดกลางรายโหนด — แดดใหญ่ขึ้น · บ้าน 2.5D กว้างกว่า (จุดกลาง x=20) · แท่นวงรีเฉพาะกริด/แบตแบบ mock
+  var p = PF_POS[k], L = PF_LAB[k], sc = ({sun:1.8, home:1.5})[k] || 1.45, cx = (k==="home"?20:16);
+  return '<g class="'+(on?'pf-on':'pf-off')+'">'
+    + '<circle class="pf-halo" cx="'+p[0]+'" cy="'+p[1]+'" r="22" fill="'+col+'" filter="url(#pfBlur)"/>'
+    + (k==="grid"||k==="batt" ? '<ellipse cx="'+p[0]+'" cy="'+(p[1]+19)+'" rx="22" ry="4.5" fill="none" stroke="'+col+'" style="stroke-opacity:.45"/>' : '')
+    + '<g transform="translate('+(p[0]-cx*sc)+','+(p[1]-16*sc)+') scale('+sc+')" filter="url(#pfGlowS)">'+icon+'</g>'
+    + '<text class="pf-lab" x="'+L[0]+'" y="'+L[1]+'" text-anchor="'+L[2]+'">'+label+'</text>'
+    + '<text class="pf-val" x="'+L[0]+'" y="'+(L[1]+24)+'" text-anchor="'+L[2]+'">'
     +   val+'<tspan class="pf-u"> W</tspan></text></g>';
 }
 
+/* สัญลักษณ์ 32×32 เส้นบาง 1.25 (สเปก Codex directions-2.md แบบ 5) */
+/* 2026-11-22 v3.18.1 ดวงอาทิตย์มีมิติแบบ mock: แสงฟุ้ง · รังสีปลายเรียว 16 เส้น (ยาว/สั้นสลับ)
+   วงโคจรแบ่ง 2 ซีก: ซีกหลังวาดก่อนลูกกลม ซีกหน้าวาดทับ ⇒ ดูเหมือนวงพาดรอบลูกจริง · ไฮไลต์ขาวมุมซ้ายบน */
 function pfIconSun(c){
   var r='';
-  for(var i=0;i<8;i++){
-    var a=i*Math.PI/4;
-    r += '<line x1="'+(16+Math.cos(a)*10.5).toFixed(1)+'" y1="'+(16+Math.sin(a)*10.5).toFixed(1)
-       + '" x2="'+(16+Math.cos(a)*14.5).toFixed(1)+'" y2="'+(16+Math.sin(a)*14.5).toFixed(1)+'"/>';
+  for(var i=0;i<16;i++){
+    var a=i*Math.PI/8, r1=7.6, r2=(i%2? 10.6 : 13.4), w=(i%2? .09 : .12);
+    r += '<path d="M'+(16+Math.cos(a-w)*r1).toFixed(2)+' '+(16+Math.sin(a-w)*r1).toFixed(2)
+       + ' L'+(16+Math.cos(a)*r2).toFixed(2)+' '+(16+Math.sin(a)*r2).toFixed(2)
+       + ' L'+(16+Math.cos(a+w)*r1).toFixed(2)+' '+(16+Math.sin(a+w)*r1).toFixed(2)+'Z"/>';
   }
-  return '<g class="pf-rays" stroke="'+c+'" stroke-width="2" stroke-linecap="round">'+r+'</g>'
-       + '<circle cx="16" cy="16" r="6.4" fill="'+c+'"/>';
+  /* v3.18.2 (Napon: "icon Sun ขอให้มีการเคลื่อนไหวด้วยสวยงาม") — 4 จังหวะซ้อนกัน คนละความเร็ว ไม่ซิงก์กัน:
+     แสงฟุ้งหายใจ 3.6 วิ · รังสียาวหมุน 40 วิ · รังสีสั้นหมุนสวน 28 วิ · ดาวเล็กโคจรตามวง 6 วิ (animateMotion)
+     ปิดการเคลื่อนไหวในเครื่อง = ทุกอย่างนิ่ง (CSS) + ไม่วาดดาวโคจร (SMIL ไม่ฟัง CSS) */
+  var long='', short='';
+  for(var j=0;j<16;j++){ var seg = r.split('/>')[j]; if(!seg) continue; if(j%2) short += seg+'/>'; else long += seg+'/>'; }
+  var orb = 'transform="rotate(-10 16 16)" fill="none" stroke="'+c+'" stroke-width=".8"';
+  return '<circle class="pf-sunglow" cx="16" cy="16" r="11" fill="url(#pfSunGlow)"/>'
+       + '<path d="M1 16 A15 4.4 0 0 1 31 16" '+orb+' opacity=".55"/>'          // ซีกหลัง
+       + '<g class="pf-rayL" fill="url(#pfRay)"><circle cx="16" cy="16" r="13.4" fill="none"/>'+long+'</g>'
+       + '<g class="pf-rayS" fill="url(#pfRay)"><circle cx="16" cy="16" r="13.4" fill="none"/>'+short+'</g>'
+       + '<circle cx="16" cy="16" r="6" fill="url(#pfSunDisc)"/>'
+       + '<ellipse cx="14.3" cy="14" rx="2.2" ry="1.5" fill="#fff" opacity=".6"/>'
+       + '<path d="M31 16 A15 4.4 0 0 1 1 16" '+orb+' opacity=".95"/>'           // ซีกหน้า
+       + (PF_REDUCE ? '' : '<g transform="rotate(-10 16 16)"><circle r=".9" fill="#fff4e0">'
+       +   '<animateMotion dur="6s" repeatCount="indefinite" path="M31 16 A15 4.4 0 0 1 1 16 A15 4.4 0 0 1 31 16"/></circle></g>');
 }
+/** v3.18.2 (Napon: "Batt ขอเป็นแนวตั้ง และ scale ตามที่จุไฟได้จริงๆ")
+ *  แบตแนวตั้ง · ระดับน้ำไฟ = SOC จริงแบบต่อเนื่อง (ไม่ปัดเป็นช่อง) · ขีดจาง 25/50/75% ไว้กะระดับ
+ *  ผิวบนของระดับมีเส้นสว่าง (เหมือนผิวของเหลว) · ไล่เฉดบนสว่าง→ล่างเข้ม */
 function pfIconBatt(c, soc){
-  var h = soc===null ? 0 : Math.max(0, Math.min(1, soc/100)) * 13.4;
-  return '<rect x="11.5" y="6" width="9" height="3.2" rx="1.4" fill="'+c+'"/>'
-       + '<rect x="8" y="9.2" width="16" height="18.4" rx="3.4" fill="none" stroke="'+c+'" stroke-width="2"/>'
-       + (h>0 ? '<rect x="10.5" y="'+(25.1-h).toFixed(1)+'" width="11" height="'+h.toFixed(1)+'" rx="1.6" fill="'+c+'"/>' : '');
+  var v = (soc===null||soc===undefined||isNaN(soc)) ? 0 : Math.max(0, Math.min(100, soc));
+  var inH = 21.6, y0 = 28.2, h = inH*v/100;                    // ช่องใน: y 6.6 – 28.2
+  var s = '<rect x="13" y="1.6" width="6" height="2.6" rx="1" fill="'+c+'"/>'
+        + '<rect x="9" y="4.2" width="14" height="26" rx="3.4" fill="none" stroke="'+c+'" stroke-width="1.4"/>'
+        + '<rect x="10.9" y="6.6" width="10.2" height="'+inH+'" rx="1.8" fill="'+c+'" opacity=".08"/>';
+  if(h>0) s += '<rect x="10.9" y="'+(y0-h).toFixed(2)+'" width="10.2" height="'+h.toFixed(2)+'" rx="1.8" fill="url(#pfBattFill)"/>'
+             + '<path d="M11.6 '+(y0-h+.6).toFixed(2)+' H20.4" stroke="#fff" stroke-width=".6" opacity=".7" stroke-linecap="round"/>';
+  for(var i=1;i<4;i++){ var ty=(y0-inH*i/4).toFixed(2); s += '<path d="M10.9 '+ty+' H12.6 M19.4 '+ty+' H21.1" stroke="'+c+'" stroke-width=".5" opacity=".6"/>'; }
+  return s;
 }
-function pfIconHome(c){
-  return '<g fill="none" stroke="'+c+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">'
-       + '<path d="M5 16.5 L16 7 L27 16.5"/><path d="M8.5 15.2 V26 H23.5 V15.2"/>'
-       + '<path d="M13.6 26 V20.2 H18.4 V26"/></g>';
+/* 2026-11-22 v3.18.1 บ้านโมเดิร์น 2.5 มิติแบบ mock (Napon: "ถ้าไม่ได้ไม่เป็นไร"):
+   หน้าจั่วกระจกไฟอุ่น · ผนังข้างเข้มกว่า · แผ่นหลังคาลอย · ต้นไม้ข้างบ้าน · แสงไฟหน้าบ้านส่องพื้น
+   🔵 ล้นกรอบ 32×32 ไปทางขวา (ถึง x≈38) โดยตั้งใจ — บ้านแนวนอนต้องกว้างกว่าไอคอนอื่น */
+/* v3.18.2 (Napon): บ้านใช้ไฟ < 1000 W = เปิดไฟหน้าต่างแถวล่าง · ≥ 1000 W = เปิดแถวบนด้วย
+   หน้าต่างที่ไม่เปิดไฟ = กระจกมืด (#24302d) มีเงาสะท้อนจาง ๆ · แสงส่องพื้นแรงตามจำนวนแถวที่เปิด */
+var HOME_UPPER_W = 1000;
+function pfIconHome(c, load){
+  var up = load!==null && load!==undefined && !isNaN(load) && load >= HOME_UPPER_W;
+  var lo = load!==null && load!==undefined && !isNaN(load) && load >= 20;
+  var on  = 'fill="url(#pfWin)"', off = 'fill="#24302d"';
+  return '<ellipse cx="13" cy="27.6" rx="12" ry="1.8" fill="url(#pfWinGlow)" opacity="'+(up?1:(lo?.6:0))+'"/>'
+       + '<polygon points="20,15 32,10.6 32,24.6 20,27.5" fill="#1b2522" stroke="#5f716b" stroke-width=".4"/>'
+       + '<polygon points="3,27.5 3,15.4 11.5,7.4 20,15.4 20,27.5" fill="#263330" stroke="#6f827c" stroke-width=".4"/>'
+       + '<polygon points="11.5,6 22.2,16 34,11.2 23.4,1.6" fill="#3b4a46"/>'
+       + '<path d="M1.4 16.3 L11.5 6 L22.2 16 M11.5 6 L23.4 1.6 L34 11.2" fill="none" stroke="#c9d6d0" stroke-width=".9" stroke-linejoin="round"/>'
+       + '<polygon points="7.6,16.6 11.5,12.8 15.4,16.6" '+(up?on:off)+' opacity=".9"/>'            // จั่ว = แถวบน
+       + '<rect x="5.4" y="17.6" width="12.2" height="4.8" '+(up?on:off)+'/>'                         // หน้า แถวบน
+       + '<rect x="5.4" y="22.4" width="12.2" height="5.1" '+(lo?on:off)+'/>'                         // หน้า แถวล่าง
+       + '<polygon points="22.4,16.4 29.6,13.8 29.6,17.7 22.4,20.2" '+(up?on:off)+' opacity=".75"/>' // ข้าง แถวบน
+       + '<polygon points="22.4,20.2 29.6,17.7 29.6,21.6 22.4,24" '+(lo?on:off)+' opacity=".75"/>'   // ข้าง แถวล่าง
+       + '<path d="M9.4 17.6 V27.5 M13.6 17.6 V27.5 M5.4 22.4 H17.6 M22.4 20.2 L29.6 17.7 M26 15.1 V22.8" stroke="#3a2d1e" stroke-width=".55"/>'
+       + '<path d="M6.2 18.4 L8.4 20.6" stroke="#fff" stroke-width=".4" opacity="'+(up?0:.25)+'"/>'
+       + '<path d="M35.6 27.5 V23" stroke="#5c4a36" stroke-width=".8"/>'
+       + '<path d="M35.6 15.6 L39 23.6 H32.2 Z" fill="#3f6252"/><path d="M35.6 13.4 L38.2 19.6 H33 Z" fill="#4f7a65"/>'
+       + '<path d="M0 27.7 H40" stroke="#6f827c" stroke-width=".5"/>';
 }
 function pfIconGrid(c){
-  return '<g fill="none" stroke="'+c+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">'
-       + '<path d="M9 27 L14 8 M23 27 L18 8 M14 8 H18"/>'
-       + '<path d="M12.4 14 H19.6 M10.9 20 H21.1 M12.4 14 L19.6 20 M19.6 14 L12.4 20"/></g>';
+  return '<g fill="none" stroke="'+c+'" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">'
+       + '<path d="M7 28 L16 3 L25 28 M9.6 9 H22.4 M8.4 16 H23.6 M7.6 23 H24.4 M11 9 L22.6 16 M21 9 L9.4 16 M9 16 L24 23 M23 16 L8 23"/></g>';
 }
-function pfIconHub(c){
-  return '<path d="M17.8 7 L10 17.6 H15.2 L14.2 25 L22 14.4 H16.8 Z" fill="'+c+'"/>';
+/** ฮับ = วงหอดูดาว: แสงฟุ้ง · วงนอก · ส่วนโค้งหมุน · ขีด 4 ทิศ · วงกระจกควัน + สายฟ้า · ป้าย INVERTER */
+function pfHub(){
+  var x=PF_HUB.x, y=PF_HUB.y;
+  return '<circle class="pf-aura" cx="'+x+'" cy="'+y+'" r="36" fill="var(--brass)" filter="url(#pfBlur)"/>'
+    + '<circle cx="'+x+'" cy="'+y+'" r="27" fill="none" stroke="var(--hair)" stroke-width="1"/>'
+    // ห่อวงใสไว้ใน <g> ให้กรอบของกลุ่ม = วงเต็ม ⇒ หมุนรอบจุดกลางฮับ ไม่ใช่รอบกรอบของส่วนโค้ง
+    + '<g class="pf-spin"><circle cx="'+x+'" cy="'+y+'" r="27" fill="none"/>'
+    + '<path d="M'+x+' '+(y-27)+' A27 27 0 0 1 '+(x+27)+' '+y+'" fill="none" stroke="var(--brass)" stroke-width="1.6" stroke-linecap="round"/></g>'
+    + '<path d="M'+x+' '+(y-33)+' V'+(y-29)+' M'+x+' '+(y+29)+' V'+(y+33)+' M'+(x-33)+' '+y+' H'+(x-29)+' M'+(x+29)+' '+y+' H'+(x+33)+'" stroke="var(--hair)" stroke-width="1"/>'
+    + '<circle cx="'+x+'" cy="'+y+'" r="19" fill="url(#pfOrb)" stroke="var(--hair)" stroke-width="1"/>'
+    + '<g transform="translate('+(x-19)+','+(y-19)+') scale(1.19)" filter="url(#pfGlowS)">'
+    +   '<path d="M17.8 6.6 L10 17.6 H15.2 L14.2 25.4 L22 14.4 H16.8 Z" fill="var(--brass)"/></g>'
+    + '<text class="pf-hubt" x="'+x+'" y="'+(y+45)+'" text-anchor="middle">INVERTER</text>';
+}
+/** defs ใช้ร่วมทั้งผัง — มีผังเดียวต่อหน้า ⇒ id ไม่ชน */
+function pfDefs(){
+  return '<defs>'
+    + '<filter id="pfGlowS" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.3" result="b"/>'
+    +   '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
+    + '<filter id="pfGlow" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="3.2" result="b"/>'
+    +   '<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
+    + '<filter id="pfBlur" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>'
+    + '<radialGradient id="pfOrb" cx="45%" cy="35%" r="70%"><stop offset="0" style="stop-color:var(--orb-hi)"/><stop offset="1" style="stop-color:var(--orb-lo)"/></radialGradient>'
+    + '<radialGradient id="pfSunDisc" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#fff4e2"/><stop offset=".45" stop-color="#f2c690"/><stop offset="1" stop-color="#b3733c"/></radialGradient>'
+    + '<radialGradient id="pfSunGlow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#f6c88f" stop-opacity=".6"/><stop offset="1" stop-color="#f6c88f" stop-opacity="0"/></radialGradient>'
+    + '<linearGradient id="pfRay" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe2b8"/><stop offset="1" stop-color="#d49a5c"/></linearGradient>'
+    + '<linearGradient id="pfBattFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--batt)"/><stop offset="1" style="stop-color:var(--batt);stop-opacity:.55"/></linearGradient>'
+    + '<linearGradient id="pfWin" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe9c4"/><stop offset="1" stop-color="#e0a05a"/></linearGradient>'
+    + '<radialGradient id="pfWinGlow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#f3c07e" stop-opacity=".55"/><stop offset="1" stop-color="#f3c07e" stop-opacity="0"/></radialGradient>'
+    + '</defs>';
+}
+
+/* ---------- อนุภาค (requestAnimationFrame) ----------
+   render() เขียน innerHTML ใหม่ทุกรอบ ⇒ pfStart() ถูกเรียกท้าย render() ทุกครั้ง: หยุดลูปเก่า แล้วผูกกับ path ชุดใหม่
+   ไม่มีผังในหน้า (อยู่แท็บอื่น) = ไม่เริ่มลูป · แท็บถูกซ่อน = เบราว์เซอร์หยุด rAF เอง ไม่กินแบต */
+var PFX = { raf:0, edges:[], last:0 };
+function pfStart(){
+  if(PFX.raf) cancelAnimationFrame(PFX.raf);
+  PFX.raf=0; PFX.edges=[]; PFX.last=0;
+  var svg = document.querySelector(".pflow svg");
+  if(!svg || PF_REDUCE) return;
+  var fx = svg.querySelector(".pf-fx"), NS = "http://www.w3.org/2000/svg";
+  var cores = svg.querySelectorAll(".pf-core[data-w]");
+  for(var c=0;c<cores.length;c++){
+    var path = cores[c], col = path.getAttribute("data-col"), len = path.getTotalLength(), parts = [];
+    for(var i=0;i<PF_FX.n;i++){
+      var glow = document.createElementNS(NS,"circle");
+      glow.setAttribute("r", PF_FX.head*2.4); glow.setAttribute("fill", col); glow.setAttribute("filter","url(#pfGlow)");
+      fx.appendChild(glow);
+      var els = [];
+      for(var j=0;j<PF_FX.tail;j++){
+        var el = document.createElementNS(NS,"circle");
+        el.setAttribute("r", (PF_FX.head*(1-j/PF_FX.tail*.75)).toFixed(2));
+        el.setAttribute("fill", j===0 ? "var(--pearl)" : col);
+        fx.appendChild(el); els.push(el);
+      }
+      parts.push({ p:i/PF_FX.n, els:els, glow:glow });
+    }
+    var q = Math.min(+path.getAttribute("data-w")/3000, 1);
+    PFX.edges.push({ path:path, len:len, rev:path.getAttribute("data-rev")==="1", speed:PF_FX.v0+PF_FX.v1*q, parts:parts });
+  }
+  if(PFX.edges.length) PFX.raf = requestAnimationFrame(pfStep);
+}
+function pfAt(el, e, t){
+  var pt = e.path.getPointAtLength(Math.max(0, Math.min(e.len, t*e.len)));
+  el.setAttribute("cx", pt.x.toFixed(1)); el.setAttribute("cy", pt.y.toFixed(1));
+}
+function pfStep(now){
+  if(!PFX.edges.length || !PFX.edges[0].path.isConnected){ PFX.raf=0; return; }   // ผังถูกเขียนทับ/เปลี่ยนแท็บแล้ว
+  var dt = PFX.last ? Math.min(.05, (now-PFX.last)/1000) : 0; PFX.last = now;
+  for(var a=0;a<PFX.edges.length;a++){
+    var e = PFX.edges[a], dir = e.rev ? -1 : 1;
+    for(var b=0;b<e.parts.length;b++){
+      var pt = e.parts[b];
+      pt.p = (pt.p + e.speed*dt/e.len) % 1;
+      var t = e.rev ? 1-pt.p : pt.p;
+      var fade = Math.min(1, pt.p*6, (1-pt.p)*6);       // ค่อย ๆ โผล่/จางที่หัวท้ายเส้น ไม่กระตุก
+      for(var j=0;j<pt.els.length;j++){
+        pfAt(pt.els[j], e, t - dir*j*PF_FX.gap/e.len);
+        pt.els[j].style.opacity = ((1-j/PF_FX.tail)*fade).toFixed(2);
+      }
+      pfAt(pt.glow, e, t); pt.glow.style.opacity = (.45*fade).toFixed(2);
+    }
+  }
+  PFX.raf = requestAnimationFrame(pfStep);
 }
 
 /* --- 3e) ไอคอนแบตในกล่อง "ชาร์จ/จ่าย" ---
@@ -949,26 +1312,43 @@ function dayStrip(d){
       var hIdx = Math.min(23, Math.floor(a/60));
       var b = Math.min(t1, (hIdx+1)*60);
       H[hIdx][key] += (b-a); H[hIdx].any += (b-a);
+      H[hIdx].pv = (H[hIdx].pv||0) + Math.max(0,pv)*(b-a);   // v3.18.1 W·นาที ⇒ เฉลี่ยรายชั่วโมงไว้ทำความสูงแท่ง
       tot[key] += (b-a);
       a = b;
     }
   }
-  // 2026-09-22 บีบให้พอดีจอมือถือ (Napon: แสดงไม่เต็มหน้า) — ช่องเตี้ยลง 26 -> 15
-  var W=360, gap=2.4, cw=(W-gap*23)/24, cy=2, ch=15;
-  var o = ['<svg viewBox="0 0 '+W+' 32" role="img" aria-label="24 ช่อง ชั่วโมงละ 1 ช่อง">'];
+  /* 2026-11-22 v3.18.1 แท่งมีมิติแบบ mock (Napon: "24 ชม. ใน mock มีมิติมากๆ")
+     🔑 2 ข้อมูลในแท่งเดียว: "สี" = สถานะเดิม (เขียวชาร์จ · ส้มใช้แบต · เทาซื้อไฟ — ความหมายไม่เปลี่ยน)
+        "ความสูง" = แดดผลิตเฉลี่ยชั่วโมงนั้น เทียบชั่วโมงสูงสุดของวัน (ใหม่ — mock ก็เป็นทรงระฆังตามแดด)
+     ชั่วโมงที่มีข้อมูลแต่แดด ~0 (กลางคืน) = ตอสูง 4 · ยังไม่ถึงชั่วโมงนั้น = ตอจาง 3
+     แท่งไล่เฉดบนสว่าง→ล่างจาง + แสงฟุ้งใต้แท่ง (filter) + เส้นฐาน + ขีดเวลา */
+  var W=360, gap=3, cw=(W-gap*23)/24, base=40, top=4, hMax=base-top;   // v3.18.2 base 56->40 (S24 พอดีจอ)
+  var pmax = 0;
+  for(k=0;k<24;k++) if(H[k].any) pmax = Math.max(pmax, (H[k].pv||0)/H[k].any);
+  var o = ['<svg viewBox="0 0 '+W+' 60" role="img" aria-label="24 แท่ง ชั่วโมงละ 1 แท่ง: สี = ชาร์จ/ใช้แบต/ซื้อไฟ · ความสูง = แดดที่ผลิต">'
+    + '<defs>'
+    + '<linearGradient id="stChg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:'+STRIP_CHG+'"/><stop offset="1" style="stop-color:'+STRIP_CHG+';stop-opacity:.28"/></linearGradient>'
+    + '<linearGradient id="stDis" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:'+STRIP_DIS+'"/><stop offset="1" style="stop-color:'+STRIP_DIS+';stop-opacity:.3"/></linearGradient>'
+    + '<linearGradient id="stBuy" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:'+STRIP_BUY+'"/><stop offset="1" style="stop-color:'+STRIP_BUY+';stop-opacity:.45"/></linearGradient>'
+    + '<filter id="stGlow" x="-50%" y="-30%" width="200%" height="160%"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
+    + '</defs><g filter="url(#stGlow)">'];
   for(k=0;k<24;k++){
-    var c = H[k], x = k*(cw+gap), col;
-    if(!c.any) col = "var(--surface-2)";                        // ยังไม่มีข้อมูลชั่วโมงนั้น
-    else if(c.chg >= c.dis && c.chg >= c.buy) col = STRIP_CHG;   // ชาร์จเป็นหลัก
-    else if(c.dis >= c.buy) col = STRIP_DIS;                     // ใช้แบตเป็นหลัก
-    else col = STRIP_BUY;                                        // ซื้อไฟ/นิ่ง
-    o.push('<rect x="'+x.toFixed(2)+'" y="'+cy+'" width="'+cw.toFixed(2)+'" height="'+ch+
-           '" rx="2.5" fill="'+col+'"/>');
+    var c = H[k], x = k*(cw+gap), fill, h;
+    if(!c.any){ h = 3; fill = "var(--strip-empty)"; }                          // ยังไม่มีข้อมูลชั่วโมงนั้น
+    else {
+      fill = (c.chg >= c.dis && c.chg >= c.buy) ? "url(#stChg)"                 // ชาร์จเป็นหลัก
+           : (c.dis >= c.buy ? "url(#stDis)" : "url(#stBuy)");                  // ใช้แบต / ซื้อไฟ-นิ่ง
+      var avg = (c.pv||0)/c.any;
+      h = pmax > 0 ? Math.max(4, hMax * avg / pmax) : 4;
+    }
+    o.push('<rect x="'+x.toFixed(2)+'" y="'+(base-h).toFixed(1)+'" width="'+cw.toFixed(2)+'" height="'+h.toFixed(1)+
+           '" rx="2" fill="'+fill+'"/>');
   }
+  o.push('</g><path d="M0 '+(base+1.5)+' H'+W+'" stroke="var(--hair)" stroke-width=".6" opacity=".6"/>');
   for(var hh=0; hh<=24; hh+=6){
-    var lx = hh===0 ? 0 : (hh===24 ? W : hh*(cw+gap) - gap/2);
-    o.push('<text class="hr" x="'+lx.toFixed(1)+'" y="'+(cy+ch+12)+'" text-anchor="'+
-           (hh===0?'start':(hh===24?'end':'middle'))+'">'+hh+'</text>');
+    var lx = hh===0 ? cw/2 : (hh===24 ? W-cw/2 : hh*(cw+gap) - gap/2);
+    o.push('<path d="M'+lx.toFixed(1)+' '+(base+3)+' V'+(base+7)+'" stroke="var(--hair)" stroke-width=".8"/>');
+    o.push('<text class="hr" x="'+lx.toFixed(1)+'" y="'+(base+18)+'" text-anchor="middle">'+(hh<10?'0':'')+hh+'</text>');
   }
   o.push('</svg>');
   // 2026-09-22 ตัด legend + คำอธิบายทิ้งทั้งหมด — Napon สั่ง (กินความสูงจนล้นจอมือถือ)
@@ -978,32 +1358,33 @@ function dayStrip(d){
 }
 
 function pflow(pv, load, batt, grid, soc){
-  var P=PF_POS, gridOut = (grid!==null && grid<0);
+  var gridOut = (grid!==null && grid<0);
   var cSun='var(--solar)', cBatt='var(--batt)', cHome='var(--home)',
       cGrid = gridOut ? 'var(--export)' : 'var(--grid)';
   var on = function(v){ return v!==null && v!==undefined && !isNaN(v) && Math.abs(v)>=20; };
+  var c = PF_HUB;
+  // เส้นทุกเส้นเก็บเป็น โหนด -> ฮับ · rev=true = ไฟไหลจากฮับออกไปหาโหนด
+  var e = pfEdge("sun",  cSun,  pv,   false)                     // แดดเข้าเสมอ
+        + pfEdge("home", cHome, load, true)                      // บ้านออกเสมอ (ฮับ -> บ้าน)
+        + pfEdge("batt", cBatt, batt, batt!==null && batt<0)     // ชาร์จ: ฮับ -> แบต · จ่ายออก: แบต -> ฮับ
+        + pfEdge("grid", cGrid, grid, gridOut);                  // ไหลออกกริด: ฮับ -> กริด · ซื้อ: กริด -> ฮับ
 
-  var rev = function(a){ return a.slice().reverse(); };     // กลับทิศวิ่งของเส้น
-  var e = pfEdge(PF_PATH.sun, cSun, pv)                            // แดดเข้าเสมอ
-        + pfEdge(rev(PF_PATH.home), cHome, load)                   // บ้านออกเสมอ (ฮับ -> บ้าน)
-        + (batt!==null && batt<0 ? pfEdge(rev(PF_PATH.batt), cBatt, batt)  // ชาร์จ: ฮับ -> แบต
-                                 : pfEdge(PF_PATH.batt, cBatt, batt))      // จ่ายออก: แบต -> ฮับ
-        + (gridOut ? pfEdge(rev(PF_PATH.grid), cGrid, grid)                // ไหลออกกริด: ฮับ -> กริด
-                   : pfEdge(PF_PATH.grid, cGrid, grid));                   // ซื้อ: กริด -> ฮับ
-
-  var H = PF_HUB;
   return '<div class="pflow"><svg viewBox="0 0 '+PF_VB.w+' '+PF_VB.h+'" role="img" aria-label="ผังทิศทางไฟตอนนี้">'
+    + pfDefs()
+    // วงโคจรประดับจาง ๆ ทั้งการ์ด (หอดูดาว) — วาดก่อนทุกอย่าง
+    + '<ellipse class="pf-deco" cx="'+c.x+'" cy="'+c.y+'" rx="176" ry="74"/>'
+    + '<ellipse class="pf-deco" cx="'+c.x+'" cy="'+c.y+'" rx="120" ry="44" stroke-dasharray="2 5"/>'
     + e
-    + '<rect class="pf-node" x="'+(H.x-H.w/2)+'" y="'+(H.y-H.h/2)+'" width="'+H.w+'" height="'+H.h+'" rx="13"/>'
-    + '<g transform="translate('+(H.x-20)+','+(H.y-20)+') scale(1.25)">'+pfIconHub('var(--ink-2)')+'</g>'
-    + pfNode(P.sun,  pfIconSun(cSun),  'แดด', fw(pv), cSun, on(pv), "left")
-    + pfNode(P.batt, pfIconBatt(cBatt, soc),
+    + '<g class="pf-fx"></g>'
+    + pfHub()
+    + pfNode("sun",  pfIconSun(cSun),  'แดด', fw(pv), cSun, on(pv))
+    + pfNode("batt", pfIconBatt(cBatt, soc),
         (batt!==null&&batt<0?'ชาร์จเข้าแบต':'จากแบต'),
-        (batt===null?'—':fw(Math.abs(batt))), cBatt, on(batt), "left")
-    + pfNode(P.grid, pfIconGrid(cGrid),
+        (batt===null?'—':fw(Math.abs(batt))), cBatt, on(batt))
+    + pfNode("grid", pfIconGrid(cGrid),
         (grid===null?'กริด':(gridOut?'ไหลออกกริด':'ซื้อจากกริด')),
-        (grid===null?'—':fw(Math.abs(grid))), cGrid, on(grid), "right")
-    + pfNode(P.home, pfIconHome(cHome), 'บ้าน', fw(load), cHome, on(load), "right")
+        (grid===null?'—':fw(Math.abs(grid))), cGrid, on(grid))
+    + pfNode("home", pfIconHome(cHome, load), 'บ้าน', fw(load), cHome, on(load))
     + '</svg></div>';
 }
 
@@ -1065,7 +1446,7 @@ function viewNow(d){
   +       '<div class="v">'+(batt===null?"—":fw(Math.abs(batt)))+'<u>W</u></div>'
   +     '</div>'
   +     '<div class="heroR">'
-  +       tile("ผลิตแล้ว", f(t?t.gen:null,1), "kWh", null, "self")
+  +       tile("ผลิตแล้ว", f(t?t.gen:null,1), "kWh", null, "gen")
   +       tile("ซื้อไฟแล้ว", f(t?t.imp:null,1), "kWh", t?("≈ ฿"+f(t.imp*S.rate,0)):null, "cost")
   +     '</div>'
   +   '</div>'
@@ -1332,7 +1713,7 @@ function viewHist(d){
   +   '<p class="why">เก็บอยู่ในเครื่องนี้ ตั้งแต่ <b>'+esc(dLabel(storeMin()||"—"))+'</b> ถึง <b>'
   +     esc(dLabel(storeMax()||"—"))+'</b> · เปิดครั้งหน้าจะขอ server แค่วันที่ยังไม่มี</p>'
   +   '<div class="tiles c3">'
-  +     tile("ผลิตสะสม", f(allGen,0), "kWh", null, "self")
+  +     tile("ผลิตสะสม", f(allGen,0), "kWh", null, "gen")
   +     tile("ซื้อสะสม", f(allImp,0), "kWh", "฿"+f(allImp*S.rate,0), "cost")
   +     tile("ประหยัดสะสม", "฿"+f(allSelf*S.rate,0), "", f(allSelf,0)+" kWh", "good")
   +   '</div>'
@@ -1342,7 +1723,7 @@ function viewHist(d){
   +   '<h2>ช่วงที่ดู</h2>'
   +   rangeBar()
   +   '<div class="tiles" style="margin-top:11px">'
-  +     tile("ผลิตรวม", f(sum("gen"),0), "kWh", "เฉลี่ย "+f(avgGen,1)+" /"+unit, "self")
+  +     tile("ผลิตรวม", f(sum("gen"),0), "kWh", "เฉลี่ย "+f(avgGen,1)+" /"+unit, "gen")
   +     tile("ซื้อรวม", f(totImp,0), "kWh", "฿"+f(totImp*S.rate,0), "cost")
   +     tile((daily?"วัน":unit)+"ที่ดีที่สุด", best?f(best.gen,best.gen<100?1:0):"—", "kWh",
               best?(daily?dLabel(best.key):best.label):null, "gen")
@@ -1454,6 +1835,7 @@ function render(){
   if(S.tab==="day"){ v.innerHTML = viewDay(d); drawDay(d); }
   if(S.tab==="cyc"){ v.innerHTML = viewCycle(d); drawCycle(d); }
   if(S.tab==="hist"){ v.innerHTML = viewHist(d); drawHist(d); }
+  pfStart();   // 2026-11-22 v3.18.0 อนุภาคในผังไฟ — ผูกกับ path ชุดใหม่ทุกครั้งที่เขียนหน้าใหม่ (ไม่มีผัง = หยุดลูป)
 }
 var XT = [{v:0,l:"00"},{v:360,l:"06"},{v:720,l:"12"},{v:1080,l:"18"},{v:1440,l:"24"}];
 
@@ -1672,10 +2054,11 @@ function onData(j, since, repairFrom){
     S.d = derive(j); S.err = null;
     var w = (j.meta&&j.meta.warn)||[];
     st.innerHTML =
-      spill("on","Online")+"<br>"+
-      "อัปเดต "+new Date(j.ts).toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"})+
-      "<br>คลัง "+storeCount()+" วัน"+(m.added?' · <b style="color:var(--good)">+'+m.added+' ใหม่</b>':'')+
-      (w.length? '<br><span style="color:var(--warn)">⚠ '+w.length+' warning</span>':'');
+      // 2026-11-22 v3.18.1 แถวสถานะแนวนอนแบบ mock: Online | อัปเดต | คลัง — ใช้ .sep แทน <br>
+      spill("on","Online")+'<i class="sep"></i>'+
+      "<span>อัปเดต "+new Date(j.ts).toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"})+"</span>"+
+      '<i class="sep"></i><span>คลัง '+storeCount()+" วัน"+(m.added?' · <b style="color:var(--good)">+'+m.added+' ใหม่</b>':'')+"</span>"+
+      (w.length? '<i class="sep"></i><span style="color:var(--warn)">⚠ '+w.length+'</span>':'');
     render(); fillDiag();
     // 2026-09-22 เช็คท้ายสุด: คลังในเครื่องตามหลัง server อยู่ไหม — ตามหลังมาก = ดึงใหม่ทั้งหมดให้เอง
     // 🔵 วางไว้หลัง render() เพื่อให้ผู้ใช้เห็นของเก่าก่อน แล้วค่อยรอรอบใหญ่ ไม่ใช่จอว่างตอนรอ
@@ -1811,14 +2194,20 @@ function openCfg(){
   }catch(e){}
 })();
 document.getElementById("btnRe").onclick = function(){ load(); };
+/* 2026-11-22 v3.18.3 (Napon: "แก้ให้ default เป็น dark mode"):
+   เดิม 3 สถานะ ตามระบบ → มืด → สว่าง · ใหม่ 2 สถานะ มืด ↔ สว่าง · ค่าเริ่มต้น = มืด
+   ค่าที่เคยบันทึกไว้: "light" = คงสว่าง · อื่น ๆ ("" = ตามระบบ / "dark" / ไม่เคยกด) = มืด
+   ตั้ง data-theme ตั้งแต่ใน <head> แล้ว (สคริปต์สั้นหัวไฟล์) กันหน้ากะพริบสว่างก่อนเปลี่ยนเป็นมืด */
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  var m = document.querySelector('meta[name="theme-color"]');
+  if(m) m.setAttribute("content", t==="light" ? "#EEF2EB" : "#0d1112");
+}
 document.getElementById("btnTheme").onclick = function(){
-  var cur = document.documentElement.getAttribute("data-theme");
-  var next = cur==="dark" ? "light" : (cur==="light" ? "" : "dark");
-  if(next) document.documentElement.setAttribute("data-theme", next);
-  else document.documentElement.removeAttribute("data-theme");
-  save("theme", next); render();
+  var next = document.documentElement.getAttribute("data-theme")==="light" ? "dark" : "light";
+  applyTheme(next); save("theme", next); render();
 };
-(function(){ var t = ls("theme",""); if(t) document.documentElement.setAttribute("data-theme", t); })();
+applyTheme(ls("theme","")==="light" ? "light" : "dark");
 
 var rt; window.addEventListener("resize", function(){ clearTimeout(rt); rt = setTimeout(render, 180); });
 
