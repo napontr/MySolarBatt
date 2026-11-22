@@ -520,6 +520,26 @@ header .stamp{margin-top:7px;font-size:12px}
 .card{padding:12px 14px;margin-bottom:10px}
 .ring{width:124px;height:124px}
 .ring .val b{font-size:35px}
+/* ---------- v3.18.6 กล่องบนเตี้ยลง (Napon: "เปิดใน app s24 แล้วไม่เห็น สรุปวันนี้") ----------
+   S24 ธรรมดา = 360×780 CSS px · ก่อนแก้กล่องบนสูง 197 · การ์ดสรุปเริ่มที่ 666 (จอเห็นถึง 714) */
+.ring{width:100px;height:100px}
+.ring .val .rname{font-size:11px;margin-bottom:1px}
+.ring .val b{font-size:28px}
+.ring .val b .pc{font-size:13px}
+.ringWrap .mx{font-size:10.5px;margin-top:2px}
+.bchip{max-width:82px;margin:2px auto 3px}
+.tile.tb .v{font-size:clamp(20px,5.6vw,26px)}
+.heroR .tile{padding:5px 8px}
+.heroR .tile .v{font-size:20px}
+.heroR .tile .s{font-size:10.5px}
+.hero{gap:6px}
+.heroR{gap:6px}
+.heroR .tile{padding:4px 8px}
+.heroR .tile .l{font-size:11.5px;line-height:1.5;margin-bottom:0}   /* 1.25 ตัดไม้โทของ "ซื้อ" (overflow:hidden) */
+.heroR .tile .v{line-height:1.1}
+.heroR .tile .s{margin-top:0;line-height:1.2}
+.hero > .tile.tb{padding-top:6px;padding-bottom:6px}
+.card:has(.hero){padding-top:10px;padding-bottom:10px}
 </style>
 </head>
 <body>
@@ -1054,15 +1074,15 @@ function ring(soc){
 /* v3.18.2 (Napon: "เอาให้เปิดได้ใน S24 พอดี"): ผังเตี้ยลง 270 -> 230 · ขยับแบต/บ้าน/ฮับขึ้น · ขนาดไอคอนเท่าเดิม */
 var PF_VB  = { w:372, h:230 };
 var PF_HUB = { x:186, y:118 };
-var PF_POS = { sun:[158,34], grid:[278,52], batt:[46,184], home:[306,190] };
+var PF_POS = { sun:[122,36], grid:[278,52], batt:[46,184], home:[306,190] };
 var PF_PATH = {
-  sun :"M162 60 C152 76 184 80 181 92",
+  sun :"M128 62 C132 86 160 80 174 98",
   grid:"M260 70 C246 86 222 82 207 98",
   batt:"M60 172 C90 156 130 158 164 134",
   home:"M280 202 C250 204 228 164 208 136"
 };
 /* ตำแหน่งป้าย [x, y, text-anchor] — บ้านวางป้ายเหนือรูป เพราะเส้นเข้าจากซ้ายจะพาดทับถ้าวางข้าง ๆ */
-var PF_LAB = { sun:[124,28,"end"], grid:[302,46,"start"], batt:[72,178,"start"], home:[306,140,"middle"] };
+var PF_LAB = { sun:[88,30,"end"], grid:[302,46,"start"], batt:[72,178,"start"], home:[306,140,"middle"] };
 /* อนุภาค: จำนวนต่อเส้น · ความยาวหาง (จุด) · ระยะห่างจุดหาง (px) · รัศมีหัว · ความเร็ว px/s = v0 + v1*q (q = |W|/3000 สูงสุด 1) */
 var PF_FX = { n:4, tail:12, gap:1.4, head:1.9, v0:13, v1:56 };
 var PF_REDUCE = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
